@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synthesis — Text Runtime</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #fafaf8; --text: #1a1a1a; --muted: #6b6b6b; --border: #e2e0dc; --card-bg: #ffffff;
+    --synth-gold: #d4a853; --synth-dark: #9a7b3a; --synth-bg: #f5edd6; --synth-light: #faf7ec;
+    --dim1: #3b5998; --dim2: #2d7b6f; --dim3: #9b4a6b; --dim4: #b87a3a; --dim5: #5a6a82; --dim6: #a84545;
+    --card-radius: 12px; --transition: 0.25s ease;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 28px; }
+
+  .top-nav {
+    background: var(--card-bg); border-bottom: 1px solid var(--border);
+    padding: 14px 0; position: sticky; top: 0; z-index: 10;
+  }
+  .top-nav .container { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .top-nav .site-title {
+    font-weight: 650; font-size: 1rem; color: var(--text); text-decoration: none;
+    letter-spacing: -0.02em; margin-right: 8px; white-space: nowrap;
+  }
+  .top-nav .sep { color: var(--border); font-size: 1.2rem; }
+  .top-nav a.nav-link {
+    font-size: 0.8rem; font-weight: 500; color: var(--muted); text-decoration: none;
+    padding: 4px 12px; border-radius: 100px; transition: all var(--transition); white-space: nowrap;
+  }
+  .top-nav a.nav-link:hover { background: var(--synth-bg); color: var(--synth-dark); }
+  .top-nav a.nav-link.active { background: var(--synth-gold); color: #fff; }
+
+  .page-header {
+    padding: 72px 0 48px; text-align: center;
+    background: linear-gradient(180deg, var(--synth-bg) 0%, var(--bg) 100%);
+    border-bottom: 2px solid var(--synth-gold);
+  }
+  .page-header .dim-badge {
+    display: inline-block; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--synth-dark); font-weight: 600; margin-bottom: 14px;
+    padding: 6px 20px; border: 1.5px solid var(--synth-gold); border-radius: 100px;
+    background: var(--synth-light);
+  }
+  .page-header h1 {
+    font-size: clamp(2rem, 4.5vw, 3.2rem); font-weight: 650; letter-spacing: -0.03em;
+    line-height: 1.15; margin-bottom: 16px;
+  }
+  .page-header .subtitle {
+    font-size: 1.1rem; color: var(--muted); max-width: 640px; margin: 0 auto;
+  }
+
+  section { padding: 44px 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
+
+  .section-head {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
+  }
+  .section-head .s-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0; background: var(--synth-bg); color: var(--synth-dark);
+  }
+  .section-head h2 {
+    font-size: 1.45rem; font-weight: 650; letter-spacing: -0.015em;
+    border-left: 3px solid var(--synth-gold); padding-left: 12px;
+  }
+
+  p { color: #333; margin-bottom: 12px; font-size: 1.02rem; line-height: 1.65; }
+  strong { font-weight: 600; }
+
+  .recap-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px; margin-top: 20px;
+  }
+  .recap-card {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--card-radius);
+    padding: 22px; transition: all var(--transition);
+  }
+  .recap-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.05); }
+  .recap-card .r-num { font-size: 1.6rem; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+  .recap-card .r-title { font-weight: 650; font-size: 1.02rem; margin-bottom: 6px; }
+  .recap-card .r-summary { font-size: 0.89rem; color: #444; line-height: 1.55; }
+  .recap-card.r1 .r-num { color: var(--dim1); } .recap-card.r1 { border-top: 3px solid var(--dim1); }
+  .recap-card.r2 .r-num { color: var(--dim2); } .recap-card.r2 { border-top: 3px solid var(--dim2); }
+  .recap-card.r3 .r-num { color: var(--dim3); } .recap-card.r3 { border-top: 3px solid var(--dim3); }
+  .recap-card.r4 .r-num { color: var(--dim4); } .recap-card.r4 { border-top: 3px solid var(--dim4); }
+  .recap-card.r5 .r-num { color: var(--dim5); } .recap-card.r5 { border-top: 3px solid var(--dim5); }
+  .recap-card.r6 .r-num { color: var(--dim6); } .recap-card.r6 { border-top: 3px solid var(--dim6); }
+
+  .interaction-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px; margin-top: 20px;
+  }
+  .interact-card {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--card-radius);
+    padding: 20px; transition: all var(--transition);
+  }
+  .interact-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.05); }
+  .interact-card .i-pair {
+    font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 6px; color: var(--synth-dark);
+  }
+  .interact-card .i-title { font-weight: 650; font-size: 0.95rem; margin-bottom: 6px; }
+  .interact-card .i-body { font-size: 0.87rem; color: #444; line-height: 1.55; }
+
+  .synth-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px; margin-top: 20px;
+  }
+  .synth-card {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--card-radius);
+    padding: 26px; transition: all var(--transition);
+  }
+  .synth-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+  .synth-card .s-number {
+    font-size: 2rem; font-weight: 700; color: var(--synth-gold); line-height: 1; margin-bottom: 8px;
+  }
+  .synth-card .s-title { font-size: 1.05rem; font-weight: 600; margin-bottom: 8px; }
+  .synth-card .s-body { font-size: 0.9rem; color: #444; line-height: 1.6; }
+  .synth-card .s-src {
+    font-size: 0.78rem; color: var(--muted); margin-top: 12px;
+    border-top: 1px solid var(--border); padding-top: 10px;
+  }
+
+  .tension-card {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--card-radius);
+    padding: 22px 26px; margin-bottom: 16px; border-left: 3px solid var(--synth-gold);
+  }
+  .tension-card .t-title { font-weight: 650; font-size: 1rem; margin-bottom: 6px; }
+  .tension-card .t-body { font-size: 0.92rem; color: #444; line-height: 1.55; margin-bottom: 8px; }
+  .tension-card .t-resolution {
+    font-size: 0.85rem; color: var(--synth-dark); font-weight: 500;
+    background: var(--synth-light); padding: 8px 12px; border-radius: 6px;
+  }
+
+  .change-box {
+    background: var(--card-bg); border: 2px solid var(--synth-gold);
+    border-radius: var(--card-radius); padding: 32px; margin-top: 20px;
+  }
+  .change-box h3 { font-size: 1.2rem; font-weight: 650; margin-bottom: 20px; color: var(--synth-dark); }
+  .change-item {
+    padding: 16px 0; border-bottom: 1px solid var(--border);
+    display: flex; gap: 16px; align-items: flex-start;
+  }
+  .change-item:last-child { border-bottom: none; }
+  .change-item .c-bullet {
+    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+    background: var(--synth-bg); color: var(--synth-dark);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.9rem;
+  }
+  .change-item .c-title { font-weight: 650; font-size: 0.98rem; margin-bottom: 4px; }
+  .change-item .c-desc { font-size: 0.9rem; color: #444; line-height: 1.55; }
+
+  .footer {
+    padding: 40px 0; text-align: center; color: var(--muted); font-size: 0.85rem;
+    border-top: 2px solid var(--synth-gold);
+    background: linear-gradient(180deg, var(--bg) 0%, var(--synth-light) 100%);
+  }
+
+  html { scroll-behavior: smooth; }
+  @media (max-width: 600px) {
+    .page-header { padding: 48px 0 32px; }
+    .top-nav .container { gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <div class="container">
+    <a href="index.html" class="site-title">Text Runtime</a>
+    <span class="sep">/</span>
+    <a href="the-pattern.html" class="nav-link">01·Pattern</a>
+    <a href="stable-identity.html" class="nav-link">02·Identity</a>
+    <a href="annotations.html" class="nav-link">03·Annotations</a>
+    <a href="transclusion.html" class="nav-link">04·Transclusion</a>
+    <a href="architecture.html" class="nav-link">05·Architecture</a>
+    <a href="hard-problems.html" class="nav-link">06·Problems</a>
+    <a href="synthesis.html" class="nav-link active">Synthesis</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="container">
+    <p class="dim-badge">✦ Synthesis</p>
+    <h1>Text Runtime: Complete Synthesis</h1>
+    <p class="subtitle">Six dimensions, sixty years of prior art, thirty sources. Together they reveal a complete architecture for treating text as addressable, stable objects — invisible to the writer and reader, present when you need to query, annotate, reference, or track provenance.</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- The Six Dimensions Recap -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">📐</div>
+      <h2>The Six Dimensions</h2>
+    </div>
+    <div class="recap-grid">
+      <div class="recap-card r1">
+        <div class="r-num">01</div>
+        <div class="r-title">The Convergent Pattern</div>
+        <div class="r-summary">Six prior systems independently discovered the same four-layer architecture: Human Surface → Parser Pipeline → Object Store → Overlays. The referential document model — documents as lists of pointers with stable UUIDs — is the architectural invariant.</div>
+      </div>
+      <div class="recap-card r2">
+        <div class="r-num">02</div>
+        <div class="r-title">Stable Identity &amp; Structural Parsing</div>
+        <div class="r-summary">UUID v7 per node at sentence granularity. HIDs for humans, NIDs for machines. CRDT-based identity for permanent character-level addressing. Identity independent from position — the core primitive that enables everything else.</div>
+      </div>
+      <div class="recap-card r3">
+        <div class="r-num">03</div>
+        <div class="r-title">Annotation Overlays &amp; Anchoring</div>
+        <div class="r-summary">Applicative overlays referencing UUIDs, never embedded. Dual selectors (precise + fuzzy) reconciled at write time. Four-strategy cascading re-anchoring with confidence scores. Orphan state shown, never hidden.</div>
+      </div>
+      <div class="recap-card r4">
+        <div class="r-num">04</div>
+        <div class="r-title">Transclusion &amp; Provenance</div>
+        <div class="r-summary">Content by reference — the killer app for stable addressing. Three levels: read-only, write-through, bidirectional. Provenance via PROV-O ontology tracking every transformation chain. UUID-based transclusion survives renames and reorganization.</div>
+      </div>
+      <div class="recap-card r5">
+        <div class="r-num">05</div>
+        <div class="r-title">Architecture &amp; Pipeline</div>
+        <div class="r-summary">Five-stage pipeline: Normalize → Parse → UUID Assign → Index → Overlay. Format-agnostic object model. SQLite local-first storage. Eight key architectural decisions. Ten lego pieces from proven prior art.</div>
+      </div>
+      <div class="recap-card r6">
+        <div class="r-num">06</div>
+        <div class="r-title">Hard Problems</div>
+        <div class="r-summary">Granularity, transclusion edit, UUID migration, re-anchoring failure UX, annotation ownership. These are what broke every prior system. Understanding them before building is the prerequisite to success.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interaction Map -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🔗</div>
+      <h2>Interaction Map: How Every Dimension Connects</h2>
+    </div>
+
+    <div class="interaction-grid">
+      <div class="interact-card">
+        <div class="i-pair">Pattern ↔ Identity</div>
+        <div class="i-title">Architecture meets Primitive</div>
+        <div class="i-body">The four-layer stack defines <em>where</em> identity lives (Object Store, Layer 3). Stable identity defines <em>what</em> populates it. Without the pattern, identity is ad-hoc. Without identity, the Object Store is empty.</div>
+      </div>
+      <div class="interact-card">
+        <div class="i-pair">Pattern ↔ Annotations</div>
+        <div class="i-title">Architecture meets Overlays</div>
+        <div class="i-body">The applicative overlay pattern (Layer 4) is defined by the architecture. The annotation system is the first consumer. The architecture says "overlays are separate"; annotations show how to implement them.</div>
+      </div>
+      <div class="interact-card">
+        <div class="i-pair">Pattern ↔ Transclusion</div>
+        <div class="i-title">Architecture meets Killer App</div>
+        <div class="i-body">Transclusion is what makes the referential model worth building. UUID-based transclusion is the "why" behind content-as-reference. Without transclusion, the architectural complexity isn't justified.</div>
+      </div>
+      <div class="interact-card">
+        <div class="i-pair">Pattern ↔ Architecture</div>
+        <div class="i-title">Vision meets Implementation</div>
+        <div class="i-body">The pattern is the "what." The architecture is the "how." The pipeline (Normalize → Parse → UUID → Index → Overlay) is the concrete instantiation of the four-layer theoretical model.</div>
+      </div>
+      <div class="interact-card">
+        <div class="i-pair">Pattern ↔ Hard Problems</div>
+        <div class="i-title">Theory meets Reality</div>
+        <div class="i-body">The hard problems are where the elegant four-layer pattern meets messy reality. Granularity, copy-paste semantics, annotation ownership — these are the gaps between the theoretical model and the working system.</div>
+      </div>
+      <div class="interact-card">
+        <div class="i-pair">Identity ↔ Annotations</div>
+        <div class="i-title">Anchor meets Annotation</div>
+        <div class="i-body">UUIDs are the primary anchors for annotations. The FragmentSelector (UUID-based) is what the Text Runtime adds that Hypothesis and W3C never had. Identity quality directly determines annotation quality.</div>
+      </div>
+      <div class="interact-card">
+        <div class="i-pair">Identity ↔ Transclusion</div>
+        <div class="i-title">Identifier meets Reference</div>
+        <div class="i-body">Transclusion is UUID-based referencing. <code>![[doc-uuid#paragraph-uuid]]</code> survives renames, reorganization, and edits because UUIDs don't change. The stability of the reference equals the stability of the identity.</div>
+      </div>
+      <div class="interact-card">
+        <div class="i-pair">Identity ↔ Hard Problems</div>
+        <div class="i-title">Stability meets Edge Cases</div>
+        <div class="i-body">The granularity problem (where do UUIDs stop?), the UUID migration problem (does copy-paste preserve UUIDs?), and CRDT compaction are all identity questions. The answers determine the runtime's stability envelope.</div>
+      </div>
+      <div class="interact-card">
+        <div class="i-pair">Annotations ↔ Transclusion</div>
+        <div class="i-title">Overlay meets Reference</div>
+        <div class="i-body">The annotation ownership problem — when paragraph X is transcluded into document B and annotated there, where does the annotation live? This is the deepest unsolved question at the intersection of these two dimensions.</div>
+      </div>
+      <div class="interact-card">
+        <div class="i-pair">Annotations ↔ Architecture</div>
+        <div class="i-title">Consumer meets Pipeline</div>
+        <div class="i-body">The overlay layer (Stage 5) is where annotations live. The dual-selector reconciliation happens at write time in the pipeline. The cascading re-anchoring happens at query time. Architecture defines the hooks; annotations consume them.</div>
+      </div>
+      <div class="interact-card">
+        <div class="i-pair">Annotations ↔ Hard Problems</div>
+        <div class="i-title">Robustness meets Failure</div>
+        <div class="i-body">The re-anchoring failure UX problem is about how annotations degrade. The LFCC's "no silent drift" principle and the confidence score system are the bridge between annotation theory and failure handling.</div>
+      </div>
+      <div class="interact-card">
+        <div class="i-pair">Transclusion ↔ Architecture</div>
+        <div class="i-title">Feature meets Infrastructure</div>
+        <div class="i-body">Transclusion resolution (fetch source node by UUID, render in target context) is an architecture-level concern. The three levels of transclusion (read-only, write-through, bidirectional) define the API surface.</div>
+      </div>
+      <div class="interact-card">
+        <div class="i-pair">Transclusion ↔ Hard Problems</div>
+        <div class="i-title">Killer App meets Killer Problem</div>
+        <div class="i-body">The transclusion edit problem is the hardest unsolved challenge. Who owns the edit when content appears in multiple contexts? Every approach (read-only, write-through, fork) has trade-offs. There is no perfect answer.</div>
+      </div>
+      <div class="interact-card">
+        <div class="i-pair">Architecture ↔ Hard Problems</div>
+        <div class="i-title">Design meets Constraints</div>
+        <div class="i-body">The architecture must be designed with the hard problems in mind. Round-trip fidelity, performance at scale, CRDT compaction — these inform pipeline design. The architecture is shaped by the problems it must survive.</div>
+      </div>
+      <div class="interact-card">
+        <div class="i-pair">Identity ↔ Architecture</div>
+        <div class="i-title">Core meets Pipeline</div>
+        <div class="i-body">UUID assignment (Stage 3) and indexing (Stage 4) are the architecture's identity infrastructure. The SuperDoc post-change hook pattern, UUID v7 format choice, and structural hashing are architecture decisions about identity.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cross-Cutting Patterns -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🧩</div>
+      <h2>Cross-Cutting Patterns</h2>
+    </div>
+
+    <div class="synth-grid">
+      <div class="synth-card">
+        <div class="s-number">01</div>
+        <div class="s-title">Separation of Concerns at Every Level</div>
+        <div class="s-body">All six prior systems converged: separate content from structure, structure from presentation. Xanadu's three-way split (content, links, transclusions), SiSU's object abstraction, Notion's block model. This is the architectural invariant — the pattern that every successful system discovered independently.</div>
+        <div class="s-src">📜 Xanadu · 📚 SiSU · 🧱 Notion · 🔗 BendScript</div>
+      </div>
+      <div class="synth-card">
+        <div class="s-number">02</div>
+        <div class="s-title">Applicative Structure</div>
+        <div class="s-body">Nelson's key insight — structure applied from outside, never embedded — appears in every dimension. UUIDs are the addressing layer. Annotations are overlays. Transclusions are references. Provenance is metadata. Nothing is embedded in the human-facing text.</div>
+        <div class="s-src">🔗 Ted Nelson · 📎 Hypothesis · 📋 W3C Web Annotation</div>
+      </div>
+      <div class="synth-card">
+        <div class="s-number">03</div>
+        <div class="s-title">References, Not Copies</div>
+        <div class="s-body">Every dimension converges on UUID references as the connecting mechanism. The system's native reference type: a UUID to a canonical text node. Everything — annotations, transclusions, provenance — references those UUIDs. Nothing copies content. The source document is always authoritative.</div>
+        <div class="s-src">🔗 Ted Nelson · 📎 Purple Numbers · 🧱 All Six Dimensions</div>
+      </div>
+      <div class="synth-card">
+        <div class="s-number">04</div>
+        <div class="s-title">Graceful Degradation</div>
+        <div class="s-body">Every dimension needs degradation. Parsing degrades (low confidence, never crashes). Annotations degrade (active → active_partial → orphan). Transclusion degrades (read-only → orphan when source deleted). Identity degrades (UUID survives split; fails on delete). The system never fails silently.</div>
+        <div class="s-src">📋 Hypothesis · 📜 LFCC · 🔧 kaos-content · All Six Dimensions</div>
+      </div>
+      <div class="synth-card">
+        <div class="s-number">05</div>
+        <div class="s-title">Invisibility</div>
+        <div class="s-body">The runtime must be invisible during writing and reading. The text surface stays clean. UUIDs, annotations, transclusion references — all live in the machine-facing representation. This is what Purple Numbers got wrong and what the Text Runtime must get right: the writer's flow state is sacred.</div>
+        <div class="s-src">📜 Purple Numbers (lesson) · 🧱 Notion · ✍️ Text Runtime Proposal</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Core Tensions -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">⚡</div>
+      <h2>Core Tensions</h2>
+    </div>
+
+    <div class="tension-card">
+      <div class="t-title">Embedding vs. Overlaying</div>
+      <div class="t-body">Should structural metadata (UUIDs, hashes) be embedded in the source text or stored in a separate overlay? Embedding is simpler (self-contained) but pollutes the text. Overlaying is cleaner (separate concerns) but requires synchronization. Nelson and the four-layer architecture pull toward overlaying.</div>
+      <div class="t-resolution"><strong>Resolution:</strong> UUIDs and structural metadata live in the object store (SQLite), never in the source text. The source text is canonical. The object store is an index. Rebuilding the store from the source should always be possible.</div>
+    </div>
+
+    <div class="tension-card">
+      <div class="t-title">Stability vs. Precision</div>
+      <div class="t-body">Higher granularity means more precise annotations but less stable references. Sentence-level is the sweet spot, but the tension persists: every level below sentence (word, character) trades stability for precision.</div>
+      <div class="t-resolution"><strong>Resolution:</strong> Sentence-level UUIDs as primary. Character offsets within sentences for sub-sentence needs. The offset is always relative to a stable sentence UUID — if the sentence survives, the offset is valid.</div>
+    </div>
+
+    <div class="tension-card">
+      <div class="t-title">Automation vs. Curation</div>
+      <div class="t-body">Should the runtime auto-assign everything (UUIDs, structural parses, sentence boundaries) or allow human curation? Automation scales but is imperfect. Curation is perfect but doesn't scale. The parser's confidence scores are the bridge.</div>
+      <div class="t-resolution"><strong>Resolution:</strong> Auto-assign with confidence. Allow human overrides on low-confidence nodes. The system records both the auto-parse and any human corrections. Corrections are stored as overlay annotations, not modifications to the parse tree.</div>
+    </div>
+
+    <div class="tension-card">
+      <div class="t-title">Local-first vs. Global Addressability</div>
+      <div class="t-body">UUIDs are globally unique but locally scoped — a UUID in my document store means nothing to your document store. Xanadu required a global address space. The Text Runtime doesn't need to solve global addressing — it needs to enable it.</div>
+      <div class="t-resolution"><strong>Resolution:</strong> Document-scoped UUIDs with a base URL (<code>https://my-docs.example/doc-uuid#node-uuid</code>). Cross-system references use URIs. Within a single system, UUIDs are sufficient. Between systems, the document base URL provides the namespace.</div>
+    </div>
+  </section>
+
+  <!-- What Would Change Everything -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">💥</div>
+      <h2>What Would Change Everything</h2>
+    </div>
+
+    <div class="change-box">
+      <div class="change-item">
+        <div class="c-bullet">1</div>
+        <div>
+          <div class="c-title">Full-Text Semantic Search with Embedding-Based Retrieval</div>
+          <div class="c-desc">If we could search across document bodies using embeddings — finding paragraphs by semantic meaning, not just exact text — the annotation anchoring system becomes less critical. Users could find content by what it means, not what it says. Annotations could re-anchor by semantic similarity when text changes. Requires: embedding generation for all nodes, a vector index, and a semantic similarity threshold for re-anchoring.</div>
+        </div>
+      </div>
+      <div class="change-item">
+        <div class="c-bullet">2</div>
+        <div>
+          <div class="c-title">Automated Cross-Document Relationship Detection</div>
+          <div class="c-desc">If the system could automatically detect when two paragraphs in different documents are about the same thing — identifying shared claims, contradictory arguments, complementary ideas — the transclusion and provenance layers could be generated rather than authored. The overlay layer becomes self-populating. Requires: concept extraction, semantic comparison, contradiction detection. This is AI-hard but tractable with modern embeddings.</div>
+        </div>
+      </div>
+      <div class="change-item">
+        <div class="c-bullet">3</div>
+        <div>
+          <div class="c-title">A Global Content Address Space</div>
+          <div class="c-desc">If content-addressed identifiers (like BendScript's CIDs or IPFS content hashes) became universal, every paragraph on the internet could have a global, verifiable address. Transclusion would work across any document, anywhere. Provenance would be cryptographically verifiable. This is what Xanadu wanted and what the internet still doesn't have. It's an infrastructure problem, not a technical one — but if it happened, the Text Runtime would become a universal layer rather than a per-system runtime.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p style="margin-bottom:8px;"><strong>Synthesized from six dimension documents across thirty sources and sixty years of prior art.</strong></p>
+    <p>Xanadu (Nelson, 1960–2000) · Purple Numbers (Kim/Engelbart, 2001–2005) · SiSU (Amissah, 2006–2025) · Hypothesis (2013–present) · Notion/Tiptap (2020–present) · BendScript (2024) · W3C Web Annotation (2017) · C2PA/Encypher (2024) · Semiont (2025) · Local-First Collaboration Contract (2025)</p>
+    <p style="margin-top:12px;">July 2026</p>
+  </div>
+</footer>
+
+</body>
+</html>

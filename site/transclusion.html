@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>04 · Transclusion &amp; Provenance — Text Runtime</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #fafaf8; --text: #1a1a1a; --muted: #6b6b6b; --border: #e2e0dc; --card-bg: #ffffff;
+    --dim: #b87a3a; --dim-bg: #f5ede0; --dim-light: #faf6f0;
+    --synth-gold: #d4a853;
+    --card-radius: 12px; --transition: 0.25s ease;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 0 28px; }
+
+  .top-nav {
+    background: var(--card-bg); border-bottom: 1px solid var(--border);
+    padding: 14px 0; position: sticky; top: 0; z-index: 10;
+  }
+  .top-nav .container { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .top-nav .site-title {
+    font-weight: 650; font-size: 1rem; color: var(--text); text-decoration: none;
+    letter-spacing: -0.02em; margin-right: 8px; white-space: nowrap;
+  }
+  .top-nav .sep { color: var(--border); font-size: 1.2rem; }
+  .top-nav a.nav-link {
+    font-size: 0.8rem; font-weight: 500; color: var(--muted); text-decoration: none;
+    padding: 4px 12px; border-radius: 100px; transition: all var(--transition); white-space: nowrap;
+  }
+  .top-nav a.nav-link:hover { background: var(--dim-bg); color: var(--dim); }
+  .top-nav a.nav-link.active { background: var(--dim); color: #fff; }
+
+  .page-header {
+    padding: 64px 0 40px; text-align: center;
+    background: linear-gradient(180deg, var(--dim-light) 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  .page-header .dim-badge {
+    display: inline-block; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--dim); font-weight: 600; margin-bottom: 12px;
+    padding: 5px 16px; border: 1.5px solid var(--dim); border-radius: 100px;
+  }
+  .page-header h1 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 650; letter-spacing: -0.03em;
+    line-height: 1.2; margin-bottom: 12px;
+  }
+  .page-header .question {
+    font-size: 1.1rem; color: var(--muted); font-style: italic; max-width: 600px; margin: 0 auto;
+  }
+
+  section { padding: 40px 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
+
+  .section-head {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+  }
+  .section-head .s-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
+    background: var(--dim-bg); color: var(--dim);
+  }
+  .section-head h2 {
+    font-size: 1.35rem; font-weight: 650; letter-spacing: -0.015em;
+    border-left: 3px solid var(--dim); padding-left: 12px;
+  }
+
+  p { color: #333; margin-bottom: 12px; font-size: 1.02rem; line-height: 1.65; }
+  strong { font-weight: 600; }
+
+  .pullout {
+    background: var(--dim-light); border-left: 4px solid var(--dim);
+    padding: 20px 24px; border-radius: 0 var(--card-radius) var(--card-radius) 0;
+    margin: 20px 0; font-style: italic; font-size: 1rem; color: #444; line-height: 1.6;
+  }
+  .pullout .attr { display: block; font-style: normal; font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
+
+  .approach-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px; margin-top: 20px;
+  }
+  .approach-card {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--card-radius);
+    padding: 22px; border-left: 3px solid var(--dim);
+  }
+  .approach-card .a-name { font-weight: 650; font-size: 1rem; margin-bottom: 6px; }
+  .approach-card .a-status { font-size: 0.8rem; color: var(--dim); font-weight: 600; margin-bottom: 8px; }
+  .approach-card .a-detail { font-size: 0.9rem; color: #444; line-height: 1.55; }
+
+  .diagram-box {
+    background: var(--dim-light); border: 1px solid var(--dim);
+    border-radius: var(--card-radius); padding: 28px; margin: 20px 0;
+  }
+  .diagram-box h4 { font-size: 1.05rem; font-weight: 650; margin-bottom: 14px; color: var(--dim); }
+  .diagram-box .flow { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85rem; color: #555; line-height: 1.8; }
+
+  .provenance-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px; margin-top: 20px;
+  }
+  .prov-card {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--card-radius);
+    padding: 24px; border-top: 3px solid var(--dim);
+  }
+  .prov-card .pv-name { font-weight: 650; font-size: 1.05rem; margin-bottom: 6px; color: var(--dim); }
+  .prov-card .pv-source { font-size: 0.8rem; color: var(--muted); margin-bottom: 12px; }
+  .prov-card .pv-finding { font-size: 0.93rem; color: #444; line-height: 1.55; }
+
+  .xref-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px; margin-top: 16px;
+  }
+  .xref-card {
+    padding: 14px 18px; border-radius: 8px; font-size: 0.88rem;
+    text-decoration: none; transition: all var(--transition); border: 1px solid var(--border);
+    background: var(--card-bg);
+  }
+  .xref-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+  .xref-card .xr-num { font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; }
+  .xref-card .xr-desc { color: #555; line-height: 1.45; }
+
+  .footer { padding: 36px 0; text-align: center; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--border); }
+
+  html { scroll-behavior: smooth; }
+  @media (max-width: 600px) {
+    .page-header { padding: 44px 0 28px; }
+    .top-nav .container { gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <div class="container">
+    <a href="index.html" class="site-title">Text Runtime</a>
+    <span class="sep">/</span>
+    <a href="the-pattern.html" class="nav-link">01·Pattern</a>
+    <a href="stable-identity.html" class="nav-link">02·Identity</a>
+    <a href="annotations.html" class="nav-link">03·Annotations</a>
+    <a href="transclusion.html" class="nav-link active">04·Transclusion</a>
+    <a href="architecture.html" class="nav-link">05·Architecture</a>
+    <a href="hard-problems.html" class="nav-link">06·Problems</a>
+    <a href="synthesis.html" class="nav-link">Synthesis</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="container">
+    <p class="dim-badge">Dimension 04</p>
+    <h1>Transclusion &amp; Provenance</h1>
+    <p class="question">How do you include content by reference — and track where it came from?</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- The Question -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">❓</div>
+      <h2>The Question</h2>
+    </div>
+    <p>Transclusion is the <strong>killer app</strong> for stable addressing. It answers a simple question: can I include a paragraph from document A in document B, have it stay connected to the source, and survive edits at both ends? This is what quotation, copying, and cross-referencing merely attempt — they are ways people have had to imitate transclusion.</p>
+    <p>Coupled with provenance — tracking where every piece of text came from, what it was derived from, and who transformed it — transclusion becomes the mechanism for building a traceable, composable document ecosystem. The Text Runtime enables what no current system can: <strong>transclusion at the paragraph/sentence level with stable, verifiable references.</strong></p>
+  </section>
+
+  <!-- The State of Transclusion -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">📡</div>
+      <h2>The State of Transclusion Today</h2>
+    </div>
+    <p>Transclusion exists today — but only at the document or section level, and only with fragile references:</p>
+
+    <div class="approach-grid">
+      <div class="approach-card">
+        <div class="a-name">Obsidian/Magma WikiLinks</div>
+        <div class="a-status">Document/Section · Fragile</div>
+        <div class="a-detail"><code>![[Page#Section]]</code> — the most popular current implementation. Transcludes documents or sections. References break when the target page is renamed or the section heading changes. No stable identifier — the link is by filename/heading text. The Magma extension adds recursive expansion and header level adjustment but doesn't solve the identity problem.</div>
+      </div>
+      <div class="approach-card">
+        <div class="a-name">Obsidian Block References</div>
+        <div class="a-status">Block · Semi-stable</div>
+        <div class="a-detail"><code>![[Note#^block-id]]</code> — manual block anchors placed by the author. Survives within a single note but the <code>^block-id</code> is local to the note, not globally unique. No protection against the note being renamed. Closest thing to what the Text Runtime enables, but without the infrastructure.</div>
+      </div>
+      <div class="approach-card">
+        <div class="a-name">org-transclusion (Emacs)</div>
+        <div class="a-status">Live-sync · Mature</div>
+        <div class="a-detail">Uses Emacs overlay <code>modification-hooks</code> to propagate edits bidirectionally between source and transclusion. Edit either copy — the other updates instantly. The <code>text-clone</code> library creates paired overlays where any modification to one is mirrored to the other. The most technically sophisticated transclusion implementation, but limited to Emacs.</div>
+      </div>
+      <div class="approach-card">
+        <div class="a-name">BendScript Edges</div>
+        <div class="a-status">Graph-native · v0.1</div>
+        <div class="a-detail">Transclusion as a typed edge (<code>transcludes</code> predicate) in a content-addressed document graph. Edges target span URIs like <code>bend:#blk-1.spn-2</code>. Edge types include <code>cites</code>, <code>supports</code>, <code>contradicts</code>, <code>transcludes</code>. The most expressive model, but still in v0.1.</div>
+      </div>
+    </div>
+
+    <div class="pullout">
+      "Transclusion is what quotation, copying and cross-referencing merely attempt: they are ways that people have had to imitate transclusion, which is the true abstract relationship that paper cannot show. Transclusion means that the same thing is knowably and visibly in more than one place."
+      <span class="attr">— Ted Nelson, Xanadu (1960s)</span>
+    </div>
+  </section>
+
+  <!-- Transclusion in the Text Runtime -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🔗</div>
+      <h2>Transclusion in the Text Runtime</h2>
+    </div>
+    <p>The Text Runtime enables transclusion that no current system can match: <strong>by UUID, at any granularity, with verifiable provenance.</strong></p>
+
+    <div class="diagram-box">
+      <h4>How It Works</h4>
+      <div class="flow">
+<span style="color:var(--dim);">Document A</span> contains paragraph <code>#a3f2c9d1</code><br>
+&nbsp;&nbsp;"The Text Runtime gives every sentence a permanent address."<br>
+<br>
+<span style="color:var(--dim);">Document B</span> declares a transclusion:<br>
+&nbsp;&nbsp;<code>transclude: docA#a3f2c9d1</code><br>
+<br>
+At render time:<br>
+&nbsp;&nbsp;1. Resolve UUID → fetch node content from Document A<br>
+&nbsp;&nbsp;2. Display the paragraph (optionally with source attribution)<br>
+&nbsp;&nbsp;3. If Document A changes → Document B's view updates<br>
+&nbsp;&nbsp;4. If paragraph is deleted → Document B shows orphan state<br>
+<br>
+<span style="color:#555;">The reference is to a UUID, not a filename or position.<br>
+Renaming, reorganizing, or editing Document A doesn't break the link.</span>
+      </div>
+    </div>
+
+    <p><strong>Three levels of transclusion:</strong></p>
+    <p><strong>Level 1 — Read-only display.</strong> The transcluded content is shown but cannot be edited in place. Changes must be made at the source. Safe, simple, sufficient for most use cases. What Obsidian and most current tools do.</p>
+    <p><strong>Level 2 — Write-through editing.</strong> Editing a transcluded paragraph propagates changes back to the source. Dangerous but powerful — you can inadvertently edit content referenced elsewhere. The system must surface backlinks before committing edits. What org-transclusion does.</p>
+    <p><strong>Level 3 — Bidirectional awareness.</strong> Both the source and the transclusion know about each other. Backlinks are first-class. Edits are committed with awareness of all contexts the content appears in. Shows "this paragraph is referenced by 3 other documents" before allowing destructive edits. This is the aspiration.</p>
+  </section>
+
+  <!-- Provenance -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🧬</div>
+      <h2>Text Provenance: Tracking Origins</h2>
+    </div>
+    <p>Provenance answers: where did this text come from? Who wrote it? What was it derived from? What transformations were applied? Current approaches operate at three distinct levels — and the Text Runtime can unify them:</p>
+
+    <div class="provenance-grid">
+      <div class="prov-card">
+        <div class="pv-name">Cryptographic Content Provenance</div>
+        <div class="pv-source">C2PA 2.3 §A.7 · Encypher</div>
+        <div class="pv-finding">Embeds provenance manifests in text using invisible Unicode characters (zero-width joiners, variation selectors). Encypher extends this to sentence-level attribution — each sentence individually authenticated. Survives copy-paste across browsers, email, messaging. Designed for copyright enforcement and quote integrity.</div>
+      </div>
+      <div class="prov-card">
+        <div class="pv-name">Epistemic Provenance for AI</div>
+        <div class="pv-source">Wire</div>
+        <div class="pv-finding">Structural metadata attached to each retrieved chunk: source file, chunk position, ingestion time, typed relationships (elaborates, corroborates, contradicts, supersedes). Designed for AI agents to consume at inference time. "Most hallucinations are actually unfaithful attributions."</div>
+      </div>
+      <div class="prov-card">
+        <div class="pv-name">Source-to-Output Provenance</div>
+        <div class="pv-source">TROVE · GenProve</div>
+        <div class="pv-finding">Academic benchmarks for tracing each sentence in AI output back to source sentences. Relationship classification: Quotation, Compression, Inference. Sentence-level granularity is the emerging standard for AI provenance.</div>
+      </div>
+      <div class="prov-card">
+        <div class="pv-name">PROV-O Ontology</div>
+        <div class="pv-source">W3C · trustgraph · kaos-content</div>
+        <div class="pv-finding">Every transformation is an Activity that generates new Entities from existing ones. URI schemes track <code>wasDerivedFrom</code>, <code>wasGeneratedBy</code>, <code>used</code> relationships. Each node carries optional <code>Provenance</code> with source reference, page number, confidence score, extractor name.</div>
+      </div>
+    </div>
+
+    <p><strong>The gap:</strong> All four levels are about attribution (who wrote what, where did this come from), not about structural addressing (how do I stably reference paragraph X). The Text Runtime provides the addressing layer that provenance systems can then annotate. Provenance becomes an overlay — <code>node-id → provenance-record</code> — attached via the same applicative mechanism as annotations and transclusions.</p>
+  </section>
+
+  <!-- The Transclusion Edit Problem -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">⚡</div>
+      <h2>The Transclusion Edit Problem</h2>
+    </div>
+    <p>This is the hardest unsolved problem in transclusion. If document A transcludes a paragraph from document B, and a reader of document A wants to edit it — what happens?</p>
+
+    <div class="approach-grid">
+      <div class="approach-card">
+        <div class="a-name">Obsidian's Approach</div>
+        <div class="a-status">Read-only transclusion</div>
+        <div class="a-detail">You cannot edit transcluded blocks in place. You must navigate to the source, edit there, and the change propagates. Safe but creates friction. The "mother block / child block" model.</div>
+      </div>
+      <div class="approach-card">
+        <div class="a-name">Roam's Approach</div>
+        <div class="a-status">Editable everywhere</div>
+        <div class="a-detail">Blocks are interchangeable. Editing a transcluded block edits the source. Powerful but dangerous — you can inadvertently edit content referenced elsewhere, with no warning.</div>
+      </div>
+      <div class="approach-card">
+        <div class="a-name">Text Runtime Recommendation</div>
+        <div class="a-status">Explicit modes</div>
+        <div class="a-detail"><strong>Default: read-only.</strong> Transclusions are displayed but not editable. When editing is enabled, surface backlinks ("this block is referenced by 3 other documents") before committing. Offer both — but make the trade-off visible.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cross-References -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🔀</div>
+      <h2>Cross-References</h2>
+    </div>
+    <div class="xref-grid">
+      <a href="stable-identity.html" class="xref-card">
+        <div class="xr-num" style="color:#2d7b6f;">Dimension 2 · Stable Identity</div>
+        <div class="xr-desc">Transclusion is UUID-based. Without stable identity, transclusion is fragile copy-paste.</div>
+      </a>
+      <a href="annotations.html" class="xref-card">
+        <div class="xr-num" style="color:#9b4a6b;">Dimension 3 · Annotations</div>
+        <div class="xr-desc">When content is transcluded, do its annotations travel with it? The ownership question.</div>
+      </a>
+      <a href="hard-problems.html" class="xref-card">
+        <div class="xr-num" style="color:#a84545;">Dimension 6 · Hard Problems</div>
+        <div class="xr-desc">The transclusion edit problem — who owns the edit? — is one of the core unsolved challenges.</div>
+      </a>
+    </div>
+  </section>
+
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p>From Ted Nelson's transclusion vision, Obsidian/Dendron WikiLinks, org-transclusion's live-sync, BendScript's typed edges, C2PA/Encypher provenance, Wire epistemic provenance, and W3C PROV-O. Part of the Text Runtime research — July 2026.</p>
+  </div>
+</footer>
+
+</body>
+</html>

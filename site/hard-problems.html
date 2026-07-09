@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>06 · Hard Problems — Text Runtime</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #fafaf8; --text: #1a1a1a; --muted: #6b6b6b; --border: #e2e0dc; --card-bg: #ffffff;
+    --dim: #a84545; --dim-bg: #f3e8e8; --dim-light: #faf3f3;
+    --synth-gold: #d4a853;
+    --card-radius: 12px; --transition: 0.25s ease;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 0 28px; }
+
+  .top-nav {
+    background: var(--card-bg); border-bottom: 1px solid var(--border);
+    padding: 14px 0; position: sticky; top: 0; z-index: 10;
+  }
+  .top-nav .container { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .top-nav .site-title {
+    font-weight: 650; font-size: 1rem; color: var(--text); text-decoration: none;
+    letter-spacing: -0.02em; margin-right: 8px; white-space: nowrap;
+  }
+  .top-nav .sep { color: var(--border); font-size: 1.2rem; }
+  .top-nav a.nav-link {
+    font-size: 0.8rem; font-weight: 500; color: var(--muted); text-decoration: none;
+    padding: 4px 12px; border-radius: 100px; transition: all var(--transition); white-space: nowrap;
+  }
+  .top-nav a.nav-link:hover { background: var(--dim-bg); color: var(--dim); }
+  .top-nav a.nav-link.active { background: var(--dim); color: #fff; }
+
+  .page-header {
+    padding: 64px 0 40px; text-align: center;
+    background: linear-gradient(180deg, var(--dim-light) 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  .page-header .dim-badge {
+    display: inline-block; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--dim); font-weight: 600; margin-bottom: 12px;
+    padding: 5px 16px; border: 1.5px solid var(--dim); border-radius: 100px;
+  }
+  .page-header h1 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 650; letter-spacing: -0.03em;
+    line-height: 1.2; margin-bottom: 12px;
+  }
+  .page-header .question {
+    font-size: 1.1rem; color: var(--muted); font-style: italic; max-width: 600px; margin: 0 auto;
+  }
+
+  section { padding: 40px 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
+
+  .section-head {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+  }
+  .section-head .s-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
+    background: var(--dim-bg); color: var(--dim);
+  }
+  .section-head h2 {
+    font-size: 1.35rem; font-weight: 650; letter-spacing: -0.015em;
+    border-left: 3px solid var(--dim); padding-left: 12px;
+  }
+
+  p { color: #333; margin-bottom: 12px; font-size: 1.02rem; line-height: 1.65; }
+  strong { font-weight: 600; }
+
+  .pullout {
+    background: var(--dim-light); border-left: 4px solid var(--dim);
+    padding: 20px 24px; border-radius: 0 var(--card-radius) var(--card-radius) 0;
+    margin: 20px 0; font-style: italic; font-size: 1rem; color: #444; line-height: 1.6;
+  }
+
+  .problem-card {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--card-radius);
+    padding: 24px 28px; margin-bottom: 20px; border-left: 3px solid var(--dim);
+  }
+  .problem-card .pb-number {
+    font-size: 1.8rem; font-weight: 700; color: var(--dim); line-height: 1; margin-bottom: 4px;
+  }
+  .problem-card .pb-title { font-weight: 650; font-size: 1.08rem; margin-bottom: 8px; }
+  .problem-card .pb-body { font-size: 0.94rem; color: #444; line-height: 1.6; margin-bottom: 10px; }
+  .problem-card .pb-approaches {
+    font-size: 0.88rem; color: #555; background: var(--dim-light);
+    padding: 12px 16px; border-radius: 8px; line-height: 1.55;
+  }
+  .problem-card .pb-approaches strong { color: var(--dim); }
+
+  .question-list { list-style: none; margin-top: 16px; }
+  .question-list li {
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+    display: flex; gap: 10px; font-size: 0.95rem; line-height: 1.55; color: #444;
+  }
+  .question-list li:last-child { border-bottom: none; }
+  .question-list li .q-num { color: var(--dim); font-weight: 700; flex-shrink: 0; }
+  .question-list li .q-cat {
+    font-size: 0.75rem; color: var(--dim); text-transform: uppercase;
+    letter-spacing: 0.05em; font-weight: 500;
+  }
+
+  .xref-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px; margin-top: 16px;
+  }
+  .xref-card {
+    padding: 14px 18px; border-radius: 8px; font-size: 0.88rem;
+    text-decoration: none; transition: all var(--transition); border: 1px solid var(--border);
+    background: var(--card-bg);
+  }
+  .xref-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+  .xref-card .xr-num { font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; }
+  .xref-card .xr-desc { color: #555; line-height: 1.45; }
+
+  .footer { padding: 36px 0; text-align: center; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--border); }
+
+  html { scroll-behavior: smooth; }
+  @media (max-width: 600px) {
+    .page-header { padding: 44px 0 28px; }
+    .top-nav .container { gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <div class="container">
+    <a href="index.html" class="site-title">Text Runtime</a>
+    <span class="sep">/</span>
+    <a href="the-pattern.html" class="nav-link">01·Pattern</a>
+    <a href="stable-identity.html" class="nav-link">02·Identity</a>
+    <a href="annotations.html" class="nav-link">03·Annotations</a>
+    <a href="transclusion.html" class="nav-link">04·Transclusion</a>
+    <a href="architecture.html" class="nav-link">05·Architecture</a>
+    <a href="hard-problems.html" class="nav-link active">06·Problems</a>
+    <a href="synthesis.html" class="nav-link">Synthesis</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="container">
+    <p class="dim-badge">Dimension 06</p>
+    <h1>Hard Problems &amp; Open Questions</h1>
+    <p class="question">What's still unsolved? What breaks every system that tries this?</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- The Question -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">❓</div>
+      <h2>Why This Dimension Matters</h2>
+    </div>
+    <p>Every prior system hit the same hard problems. Xanadu never shipped at scale. Purple Numbers polluted the reading surface. Hypothesis accepts that some annotations will always be orphans. Notion locked the solution inside a product. Understanding these problems before building is the difference between succeeding and joining the graveyard.</p>
+    <p>These are not implementation details. They are <strong>conceptual tensions</strong> — problems where the right answer depends on context, use case, and trade-offs that have no perfect resolution. The best we can do is surface them clearly, make explicit choices, and design mechanisms that work in the most common cases while degrading gracefully in the rest.</p>
+  </section>
+
+  <!-- The Problems -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">⚡</div>
+      <h2>The Five Hard Problems</h2>
+    </div>
+
+    <div class="problem-card">
+      <div class="pb-number">1</div>
+      <div class="pb-title">The Granularity Problem</div>
+      <div class="pb-body">At what level of granularity do you assign UUIDs? Too coarse (paragraph only) and you cannot annotate a sentence within a paragraph. Too fine (character level) and UUID thrash destroys stability — every keystroke creates new sub-nodes. Sentence is the right semantic unit, but sentence detection is imperfect for certain writing styles: code blocks, bullet lists, poetry, non-English text.</div>
+      <div class="pb-approaches"><strong>Approach:</strong> Sentence-level primary, block-level fallback. When sentence detection fails or confidence is low, fall back to the containing block as the addressable unit. Code blocks, tables, and list items are treated as atomic blocks. The system records its own uncertainty — a confidence score on every node tells consumers when to trust the parse and when to treat the node as approximate. <strong>Risk:</strong> Mis-split sentences create unstable annotation targets. Mitigated by: annotation selectors include both the sentence UUID (for when it exists) and the parent paragraph UUID (fallback).</div>
+    </div>
+
+    <div class="problem-card">
+      <div class="pb-number">2</div>
+      <div class="pb-title">The Transclusion Edit Problem</div>
+      <div class="pb-body">If document A transcludes a paragraph from document B, and a reader of document A wants to edit it — what happens? Edit in place (modifying source, potentially breaking other transclusions)? Navigate to source (safe but creates friction)? Create a fork (diverges from source, defeating transclusion's purpose)? This is not a technical problem — it's a <strong>policy and UX problem</strong>. The right answer depends on context.</div>
+      <div class="pb-approaches"><strong>Approach:</strong> Offer both modes explicitly. By default, transclusions are read-only — you see the content but cannot edit in place (Obsidian's model). When editing is enabled, surface backlinks before committing: "This paragraph is referenced by 3 other documents. Editing it will change those documents too." The user makes an informed choice. <strong>Risk:</strong> Users may not understand the difference. Obvious UI distinction between "this is a live reference" and "this is an independent copy" is essential.</div>
+    </div>
+
+    <div class="problem-card">
+      <div class="pb-number">3</div>
+      <div class="pb-title">The UUID Migration Problem</div>
+      <div class="pb-body">When text is copied from document A to document B, does the UUID follow? If yes, you have an implicit transclusion (changes propagate). If no, you have an independent copy (no connection). The only way to distinguish is user intent — and requiring users to declare intent ("is this a copy or a transclusion?") breaks flow. Yet guessing wrong means either unwanted coupling or lost provenance.</div>
+      <div class="pb-approaches"><strong>Approach:</strong> Copy-paste (Ctrl+C/Ctrl+V) generates new UUIDs — it's an independent copy. Explicit transclusion (a deliberate "embed by reference" action) preserves the UUID. The difference is signaled by the action, not by a dialog. For AI-generated text that derives from sources, use the <code>derivedFrom</code> provenance relationship instead of preserving the UUID — it's a new node with lineage, not the same node in a new context. <strong>Risk:</strong> Users accustomed to "everything is a copy" may be surprised when transclusions update. Documentation and progressive disclosure are essential.</div>
+    </div>
+
+    <div class="problem-card">
+      <div class="pb-number">4</div>
+      <div class="pb-title">The Re-Anchoring Failure UX Problem</div>
+      <div class="pb-body">After document edits, annotation re-anchoring can fail. What do you show the reader? Hypothesis shows states: active, active_partial, orphan. The LFCC mandates: "No silent drift — annotations MUST NOT silently reattach to unrelated content." But what does the reader actually see when a referenced paragraph is deleted? A placeholder? An error? The last known content with a warning? The UX of reference failure is central to the system's trustworthiness.</div>
+      <div class="pb-approaches"><strong>Approach:</strong> Every annotation carries an explicit confidence score (0.0–1.0). Active (≥0.95): no indicator — the annotation is where it should be. Active_partial (0.5–0.94): subtle dashed underline — "this annotation may not be at the right place." Orphan (&lt;0.5): show the last known content in a visibly distinct container with a clear label: "This annotation references deleted content." The user can accept, adjust, or delete. <strong>Risk:</strong> Over-warning (too many active_partial indicators) trains users to ignore them. Calibrate thresholds based on real-world data.</div>
+    </div>
+
+    <div class="problem-card">
+      <div class="pb-number">5</div>
+      <div class="pb-title">The Annotation Ownership Problem</div>
+      <div class="pb-body">When paragraph X is transcluded from document A into document B, and someone annotates it in B — where does the annotation live? In B's annotation store (local to the transcluding document)? In A's (attached to the source)? In a shared overlay (visible from both)? What if the transclusion is removed — does the annotation disappear or become an orphan in B? This is the deepest unsolved question in the annotation-on-transcluded-content space.</div>
+      <div class="pb-approaches"><strong>Approach:</strong> Annotations on transcluded content live in the <strong>transcluding document's</strong> annotation store by default — they are annotations on a particular use of the content, not on the content itself. When the transclusion is removed, those annotations become orphans referencing a UUID from another document. They remain visible with a "transclusion removed" indicator. Shared annotations (visible everywhere the content appears) require explicit opt-in. <strong>Risk:</strong> The distinction between "annotating the content" vs. "annotating this use of the content" may confuse users. Default to local annotations; shared annotations as a power-user feature.</div>
+    </div>
+  </section>
+
+  <!-- Open Questions -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🔮</div>
+      <h2>Open Questions</h2>
+    </div>
+    <ul class="question-list">
+      <li>
+        <span class="q-num">1.</span>
+        <span>
+          <span class="q-cat">Storage</span><br>
+          <strong>CRDT compaction for long-lived documents.</strong> Yjs documents grow unboundedly with edit history. For a persistent Text Runtime, we need a strategy for compacting history while preserving identity. This is an active research area with no production-proven solution. Can we snapshot identity at intervals and compact the edit history without breaking references?
+        </span>
+      </li>
+      <li>
+        <span class="q-num">2.</span>
+        <span>
+          <span class="q-cat">Cross-Document</span><br>
+          <strong>Cross-document annotation conflicts.</strong> When two documents annotate the same transcluded paragraph with conflicting claims (e.g., one says "this is accurate," another says "this is outdated"), how is the conflict surfaced? Does the reader see both annotations? Is there a conflict resolution UI?
+        </span>
+      </li>
+      <li>
+        <span class="q-num">3.</span>
+        <span>
+          <span class="q-cat">Scale</span><br>
+          <strong>Performance at scale.</strong> Hypothesis's content mapping phase takes "several seconds for longer documents." For a runtime that processes documents on every write, this is unacceptable. Can we make the mapping incremental — only re-map the changed portion? Can we cache UUID lookups so re-anchoring is O(1)?
+        </span>
+      </li>
+      <li>
+        <span class="q-num">4.</span>
+        <span>
+          <span class="q-cat">Format</span><br>
+          <strong>Round-trip fidelity.</strong> If we parse Markdown into a tree and project it back to Markdown, will the output match the input? Round-trip fidelity is critical for the runtime to be invisible. kaos-content has fuzz-tested round-trip serializers, but only for a subset of Markdown. Full CommonMark fidelity needs verification.
+        </span>
+      </li>
+      <li>
+        <span class="q-num">5.</span>
+        <span>
+          <span class="q-cat">UX</span><br>
+          <strong>The invisibility requirement.</strong> The runtime must be completely invisible during writing and reading — it must "be there when you need it and gone when you don't." How do we surface runtime capabilities (query this paragraph, see its provenance, check what references it) without breaking flow? Right-click? Keyboard shortcut? Side panel? This is a UX design problem, not a technical one.
+        </span>
+      </li>
+      <li>
+        <span class="q-num">6.</span>
+        <span>
+          <span class="q-cat">AI</span><br>
+          <strong>LLM-native annotation generation.</strong> Semiont's write-time selector reconciliation was designed for LLM-generated annotations. How do we handle cases where the LLM's <code>exact</code> text doesn't match the source (off-by-one whitespace, paraphrased quotes)? Do we accept approximate matches or reject them? The Semiont approach (reject, ask LLM to retry) may not work at scale.
+        </span>
+      </li>
+      <li>
+        <span class="q-num">7.</span>
+        <span>
+          <span class="q-cat">Scale</span><br>
+          <strong>The next conference problem.</strong> When the corpus grows from 90 talks to 500+, does the architecture hold? Manual enrichment that works for 90 documents doesn't scale to 500. The overlay system supports growth in principle, but automation (auto-tagging, auto-relationship detection) becomes necessary. At what point does the system require AI-assisted curation?
+        </span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- What Prior Systems Got Wrong -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🪦</div>
+      <h2>Why Prior Systems Didn't Win</h2>
+    </div>
+    <p>Understanding these failures is as important as understanding the successes. Four patterns emerge:</p>
+    <p><strong>1. Polluting the surface.</strong> Purple Numbers put identifiers <em>in</em> the text. Readers saw "¶ 1.5.3" before every paragraph. The numbers were useful but ugly — they broke the flow state. <strong>Lesson:</strong> Stable IDs must be invisible. The runtime layer must never contaminate the writing surface.</p>
+    <p><strong>2. Requiring a global address space.</strong> Xanadu required every byte of text on the planet to have a permanent address, assigned by a central authority. Technically correct, economically impossible. <strong>Lesson:</strong> UUIDs with a document-scoped base URL are sufficient. Don't solve the global addressing problem — solve the local-first addressing problem.</p>
+    <p><strong>3. Locking the solution inside a product.</strong> Notion proved block-level UUIDs and transclusion work at scale — but only inside Notion. You cannot use Notion's block model under your own editor. <strong>Lesson:</strong> The Text Runtime must be a library/runtime, not an application. It must work under any surface.</p>
+    <p><strong>4. Over-engineering for a single use case.</strong> SiSU is a marvel of document engineering — parse once, emit many formats with stable citation numbers across translations. But it was built for one author's book publishing workflow. <strong>Lesson:</strong> Build for the general case. The runtime should be the operating system for text, not a single-purpose tool.</p>
+  </section>
+
+  <!-- Cross-References -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🔀</div>
+      <h2>Cross-References</h2>
+    </div>
+    <div class="xref-grid">
+      <a href="the-pattern.html" class="xref-card">
+        <div class="xr-num" style="color:#3b5998;">Dimension 1 · The Pattern</div>
+        <div class="xr-desc">The "why prior systems didn't win" analysis is the companion to the history of convergence.</div>
+      </a>
+      <a href="stable-identity.html" class="xref-card">
+        <div class="xr-num" style="color:#2d7b6f;">Dimension 2 · Stable Identity</div>
+        <div class="xr-desc">The granularity problem and UUID migration problem are directly about identity design.</div>
+      </a>
+      <a href="annotations.html" class="xref-card">
+        <div class="xr-num" style="color:#9b4a6b;">Dimension 3 · Annotations</div>
+        <div class="xr-desc">The re-anchoring failure UX problem is the annotation system's hardest edge case.</div>
+      </a>
+      <a href="transclusion.html" class="xref-card">
+        <div class="xr-num" style="color:#b87a3a;">Dimension 4 · Transclusion</div>
+        <div class="xr-desc">The transclusion edit and annotation ownership problems are the core transclusion tensions.</div>
+      </a>
+    </div>
+  </section>
+
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p>Derived from failure analysis of Xanadu, Purple Numbers, SiSU, Hypothesis, and Notion. The hard problems are what every prior system hit — understanding them is prerequisite to building. Part of the Text Runtime research — July 2026.</p>
+  </div>
+</footer>
+
+</body>
+</html>

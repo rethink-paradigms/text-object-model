@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>02 · Stable Identity — Text Runtime</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #fafaf8; --text: #1a1a1a; --muted: #6b6b6b; --border: #e2e0dc; --card-bg: #ffffff;
+    --dim: #2d7b6f; --dim-bg: #e6f0ed; --dim-light: #f2f8f5;
+    --synth-gold: #d4a853;
+    --card-radius: 12px; --transition: 0.25s ease;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 0 28px; }
+
+  .top-nav {
+    background: var(--card-bg); border-bottom: 1px solid var(--border);
+    padding: 14px 0; position: sticky; top: 0; z-index: 10;
+  }
+  .top-nav .container { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .top-nav .site-title {
+    font-weight: 650; font-size: 1rem; color: var(--text); text-decoration: none;
+    letter-spacing: -0.02em; margin-right: 8px; white-space: nowrap;
+  }
+  .top-nav .sep { color: var(--border); font-size: 1.2rem; }
+  .top-nav a.nav-link {
+    font-size: 0.8rem; font-weight: 500; color: var(--muted); text-decoration: none;
+    padding: 4px 12px; border-radius: 100px; transition: all var(--transition); white-space: nowrap;
+  }
+  .top-nav a.nav-link:hover { background: var(--dim-bg); color: var(--dim); }
+  .top-nav a.nav-link.active { background: var(--dim); color: #fff; }
+
+  .page-header {
+    padding: 64px 0 40px; text-align: center;
+    background: linear-gradient(180deg, var(--dim-light) 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  .page-header .dim-badge {
+    display: inline-block; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--dim); font-weight: 600; margin-bottom: 12px;
+    padding: 5px 16px; border: 1.5px solid var(--dim); border-radius: 100px;
+  }
+  .page-header h1 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 650; letter-spacing: -0.03em;
+    line-height: 1.2; margin-bottom: 12px;
+  }
+  .page-header .question {
+    font-size: 1.1rem; color: var(--muted); font-style: italic; max-width: 600px; margin: 0 auto;
+  }
+
+  section { padding: 40px 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
+
+  .section-head {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+  }
+  .section-head .s-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
+    background: var(--dim-bg); color: var(--dim);
+  }
+  .section-head h2 {
+    font-size: 1.35rem; font-weight: 650; letter-spacing: -0.015em;
+    border-left: 3px solid var(--dim); padding-left: 12px;
+  }
+
+  p { color: #333; margin-bottom: 12px; font-size: 1.02rem; line-height: 1.65; }
+  strong { font-weight: 600; }
+
+  .pullout {
+    background: var(--dim-light); border-left: 4px solid var(--dim);
+    padding: 20px 24px; border-radius: 0 var(--card-radius) var(--card-radius) 0;
+    margin: 20px 0; font-style: italic; font-size: 1rem; color: #444; line-height: 1.6;
+  }
+  .pullout .attr { display: block; font-style: normal; font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
+
+  .approach-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px; margin-top: 20px;
+  }
+  .approach-card {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--card-radius);
+    padding: 22px; border-left: 3px solid var(--dim);
+  }
+  .approach-card .a-name { font-weight: 650; font-size: 1rem; margin-bottom: 6px; }
+  .approach-card .a-verdict { font-size: 0.8rem; color: var(--dim); font-weight: 600; margin-bottom: 8px; }
+  .approach-card .a-detail { font-size: 0.9rem; color: #444; line-height: 1.55; }
+
+  .code-block {
+    background: #f5f5f2; border: 1px solid var(--border); border-radius: 8px;
+    padding: 20px 24px; margin: 16px 0; font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.88rem; line-height: 1.6; overflow-x: auto; color: #333;
+  }
+
+  .tree-visual {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--card-radius);
+    padding: 24px 28px; margin: 20px 0; font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.84rem; line-height: 1.8; color: #444;
+  }
+
+  .comparison-table {
+    width: 100%; border-collapse: collapse; margin: 20px 0;
+    font-size: 0.93rem;
+  }
+  .comparison-table th {
+    text-align: left; padding: 10px 14px; font-weight: 650; font-size: 0.82rem;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;
+    border-bottom: 2px solid var(--border);
+  }
+  .comparison-table td {
+    padding: 12px 14px; border-bottom: 1px solid var(--border); color: #444;
+  }
+  .comparison-table .approach-col { font-weight: 600; color: var(--dim); }
+
+  .xref-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px; margin-top: 16px;
+  }
+  .xref-card {
+    padding: 14px 18px; border-radius: 8px; font-size: 0.88rem;
+    text-decoration: none; transition: all var(--transition); border: 1px solid var(--border);
+    background: var(--card-bg);
+  }
+  .xref-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+  .xref-card .xr-num { font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; }
+  .xref-card .xr-desc { color: #555; line-height: 1.45; }
+
+  .footer { padding: 36px 0; text-align: center; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--border); }
+
+  html { scroll-behavior: smooth; }
+  @media (max-width: 600px) {
+    .page-header { padding: 44px 0 28px; }
+    .top-nav .container { gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <div class="container">
+    <a href="index.html" class="site-title">Text Runtime</a>
+    <span class="sep">/</span>
+    <a href="the-pattern.html" class="nav-link">01·Pattern</a>
+    <a href="stable-identity.html" class="nav-link active">02·Identity</a>
+    <a href="annotations.html" class="nav-link">03·Annotations</a>
+    <a href="transclusion.html" class="nav-link">04·Transclusion</a>
+    <a href="architecture.html" class="nav-link">05·Architecture</a>
+    <a href="hard-problems.html" class="nav-link">06·Problems</a>
+    <a href="synthesis.html" class="nav-link">Synthesis</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="container">
+    <p class="dim-badge">Dimension 02</p>
+    <h1>Stable Identity &amp; Structural Parsing</h1>
+    <p class="question">How do you give text permanent addresses — and keep them through edits, moves, and copy-paste?</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- The Question -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">❓</div>
+      <h2>The Question</h2>
+    </div>
+    <p>This is the <strong>core primitive</strong>. Every other capability — annotations, transclusion, provenance — depends on stable identity. If you can't stably reference a paragraph, you can't annotate it. If you can't stably reference a sentence, you can't transclude it. The entire runtime rises or falls on this one decision.</p>
+    <p>The question breaks into three sub-questions: (1) What kind of identifier? (2) At what granularity? (3) How does it survive edits?</p>
+  </section>
+
+  <!-- What Kind of Identifier -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🔑</div>
+      <h2>What Kind of Identifier?</h2>
+    </div>
+    <p>Purple Numbers (2001) defined the crucial distinction that every subsequent system adopted:</p>
+
+    <div class="approach-grid">
+      <div class="approach-card">
+        <div class="a-name">HIDs — Hierarchical Identifiers</div>
+        <div class="a-verdict">Human-friendly · Break on move</div>
+        <div class="a-detail">Like <code>1.5.3</code> — encodes position in the hierarchy. Good for static, published documents where content doesn't move. Break when you insert a paragraph before position 3, or reorder sections. Useful as a human-facing convenience, but not as the primary addressing mechanism.</div>
+      </div>
+      <div class="approach-card">
+        <div class="a-name">NIDs — Node Identifiers (UUIDs)</div>
+        <div class="a-verdict">Machine-friendly · Survive everything</div>
+        <div class="a-detail">UUID v7 — time-ordered, globally unique, no coordination needed. Persist for the lifetime of the content. If a paragraph moves from section 2 to section 5, its UUID stays the same. This is the primary addressing mechanism for the runtime.</div>
+      </div>
+    </div>
+
+    <div class="pullout">
+      "Augment-style statement IDs (NIDs) are better references for dynamic documents, because even if an item's location changes in new versions of a document, the link will continue to point to the correct item."
+      <span class="attr">— Eugene Kim, Purple Numbers (2001)</span>
+    </div>
+
+    <p>The field converged on <strong>UUID v7 as the default</strong>. It's monotonically increasing (good for B-tree storage in SQLite), globally unique without a central authority, and familiar to every developer. Content hashes (like BendScript's CID) add integrity verification but can't re-anchor after edits — they're complementary, not a replacement.</p>
+  </section>
+
+  <!-- Granularity -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🎯</div>
+      <h2>At What Granularity?</h2>
+    </div>
+    <p>This is the granularity problem — and every prior system hit it. Too coarse, and you can't annotate what needs annotating. Too fine, and the reference space explodes.</p>
+
+    <table class="comparison-table">
+      <tr>
+        <th>Level</th><th>Stability</th><th>Precision</th><th>Verdict</th>
+      </tr>
+      <tr>
+        <td class="approach-col">Character</td>
+        <td>Low — every keystroke changes identity</td>
+        <td>Maximum precision</td>
+        <td>UUID thrash. Every edit creates new sub-nodes. Not viable.</td>
+      </tr>
+      <tr>
+        <td class="approach-col">Word</td>
+        <td>Low-medium — words change frequently</td>
+        <td>High</td>
+        <td>Too unstable. Word choice is the most edited aspect of text.</td>
+      </tr>
+      <tr>
+        <td class="approach-col">Sentence</td>
+        <td>High — sentences are edited less often than words</td>
+        <td>Good</td>
+        <td><strong>Primary granularity.</strong> Natural semantic unit. What humans quote, annotate, reference.</td>
+      </tr>
+      <tr>
+        <td class="approach-col">Paragraph</td>
+        <td>Very high — paragraphs are the most stable unit</td>
+        <td>Moderate</td>
+        <td><strong>Block-level identity.</strong> Good for structural operations (move, reorder, transclude).</td>
+      </tr>
+      <tr>
+        <td class="approach-col">Section/Heading</td>
+        <td>Highest — rarely deleted</td>
+        <td>Low</td>
+        <td>Good for document-level navigation.</td>
+      </tr>
+    </table>
+
+    <p><strong>The recommendation:</strong> Sentence-level granularity as the primary addressing unit, with paragraph-level UUIDs for block operations, and character offsets for sub-sentence precision. Sentence detection is a solved problem — Santhosh Thottingal (2026) demonstrated a six-stage pipeline for HTML sentence segmentation using sentencex-wasm.</p>
+
+    <p>For cases where sentence detection fails (code blocks, poetry, bullet lists), fall back to the containing block as the addressable unit. The system degrades gracefully, never silently.</p>
+  </section>
+
+  <!-- Four Approaches to Stable Identity -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🔬</div>
+      <h2>Four Approaches to Identity</h2>
+    </div>
+    <p>The prior art reveals four distinct approaches to giving text stable identity. Each has different trade-offs, and the Text Runtime may need to compose several of them.</p>
+
+    <div class="approach-grid">
+      <div class="approach-card">
+        <div class="a-name">UUID-Based (Nominal Identity)</div>
+        <div class="a-verdict">✅ Recommended · Notion, Tiptap, kaos-content</div>
+        <div class="a-detail">Every node gets a UUID v7 at creation time. The UUID is the node's name — it doesn't change when content changes. Parent references, backlinks, and transclusions all use the UUID. The SuperDoc <code>paraId</code> pattern adds a post-change hook that assigns fresh IDs to new nodes and deduplicates on split/merge.</div>
+      </div>
+      <div class="approach-card">
+        <div class="a-name">Content-Hash Identity</div>
+        <div class="a-verdict">⚠️ Complementary · BendScript, Web Verse</div>
+        <div class="a-detail">The node's identifier is a hash of its content (SHA-256 or CID). Self-verifying — you can detect if content changed. But renames and reorganizations break references. Good as a verification layer, not as the primary addressing mechanism.</div>
+      </div>
+      <div class="approach-card">
+        <div class="a-name">Position-Based Identity</div>
+        <div class="a-verdict">❌ Avoid as primary · ProseMirror native, XPath</div>
+        <div class="a-detail">Identity is derived from position in the document tree. Zero tooling cost. But edits invalidate positions immediately. Requires complex mapping layers (ProseMirror's step mapping, Hypothesis's position mapping). Fragile.</div>
+      </div>
+      <div class="approach-card">
+        <div class="a-name">CRDT-Based Identity</div>
+        <div class="a-verdict">🔄 Future-proof · Yjs, Automerge</div>
+        <div class="a-detail">Every character position has a permanent (clientID, clock) tuple. When content is inserted, positions are fixed forever. This is the most principled approach — permanent identity at every level. But CRDT documents grow unboundedly and need compaction for long-lived documents.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Structural Parsing -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🌳</div>
+      <h2>Structural Parsing: Text → Tree</h2>
+    </div>
+    <p>The second half of the identity problem is parsing. Before you can assign UUIDs, you need to know what a "node" is. The Text Runtime parses text into a typed structural tree:</p>
+
+    <div class="tree-visual">
+Document<br>
+├── Section<br>
+│   ├── Heading (h1)<br>
+│   ├── Paragraph<br>
+│   │   ├── Sentence<br>
+│   │   └── Sentence<br>
+│   ├── Blockquote<br>
+│   │   └── Paragraph → Sentence<br>
+│   └── CodeBlock<br>
+├── Section<br>
+│   ├── Heading (h2)<br>
+│   ├── List<br>
+│   │   ├── ListItem → Paragraph → Sentence<br>
+│   │   └── ListItem → Paragraph → Sentence<br>
+│   └── Paragraph → Sentence<br>
+└── Section ...
+    </div>
+
+    <p>The parsing pipeline is <strong>format-specific at input, format-agnostic at output</strong>. Markdown uses remark/mdast. Plain text uses a sentence tokenizer. HTML uses tree-sitter. Each parser produces the same typed tree. New formats implement a <code>Parser</code> interface — the runtime doesn't care what format the text came from.</p>
+
+    <p>Critically, parsing is <strong>best-effort, never failing</strong>. Malformed Markdown doesn't crash the parser — it degrades gracefully, preserving as much structure as possible and recording uncertainty via confidence scores on each node.</p>
+  </section>
+
+  <!-- UUID Assignment Pattern -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">⚙️</div>
+      <h2>The UUID Assignment Pattern</h2>
+    </div>
+    <p>SuperDoc's <code>paraId</code> allocator provides the canonical implementation pattern:</p>
+
+    <div class="code-block">
+<span style="color:#999;">// After every document change, walk the tree</span><br>
+appendTransaction(transaction, oldState, newState) {<br>
+&nbsp;&nbsp;<span style="color:#999;">// 1. Find new nodes (no paraId)</span><br>
+&nbsp;&nbsp;<span style="color:#999;">// 2. Assign fresh UUID v7 to each</span><br>
+&nbsp;&nbsp;<span style="color:#999;">// 3. Deduplicate (split: first half keeps old ID, second gets new)</span><br>
+&nbsp;&nbsp;<span style="color:#999;">// 4. Handle paste (clone → new IDs to avoid collision)</span><br>
+&nbsp;&nbsp;<span style="color:#999;">// 5. Return transaction with ID assignments</span><br>
+}
+    </div>
+
+    <p>Key rules from prior art:</p>
+    <p><strong>Split:</strong> When a paragraph is split into two, the first half keeps the original UUID. The second half gets a new UUID. This preserves references to the "before" content.</p>
+    <p><strong>Merge:</strong> When two paragraphs merge, the surviving paragraph keeps its UUID. The absorbed paragraph's UUID is retired. References to the retired UUID enter <code>active_partial</code> state.</p>
+    <p><strong>Copy-paste:</strong> By default, pasted content gets new UUIDs — it's an independent copy. When explicitly transcluding (not copying), the UUID is preserved — it's a reference to the same content.</p>
+    <p><strong>Delete:</strong> The UUID enters a tombstone state. References to deleted nodes become orphans, shown with the last known content and a visual indicator. Never silently hide the break.</p>
+  </section>
+
+  <!-- Key Insight -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">💡</div>
+      <h2>The Key Insight</h2>
+    </div>
+    <div class="pullout">
+      "Identity must be independent from position. Never identify something by paragraph 17 or sentence 9. Ordering is stored separately — it's a list of UUIDs, not a numbered sequence. Position changes should never invalidate identity."
+    </div>
+    <p>This is the architectural invariant that enables everything else. When identity is independent from position, a paragraph can move from section 2 to section 5, and every annotation, transclusion, and reference to it survives. When identity depends on position (as in all current text editors), any structural change breaks all references.</p>
+  </section>
+
+  <!-- Cross-References -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🔀</div>
+      <h2>Cross-References</h2>
+    </div>
+    <div class="xref-grid">
+      <a href="the-pattern.html" class="xref-card">
+        <div class="xr-num" style="color:#3b5998;">Dimension 1 · The Pattern</div>
+        <div class="xr-desc">The referential document model that stable identity enables. UUIDs are the glue between content and structure.</div>
+      </a>
+      <a href="annotations.html" class="xref-card">
+        <div class="xr-num" style="color:#9b4a6b;">Dimension 3 · Annotations</div>
+        <div class="xr-desc">Annotations target UUIDs, not positions. Without stable identity, annotation anchoring is impossible.</div>
+      </a>
+      <a href="transclusion.html" class="xref-card">
+        <div class="xr-num" style="color:#b87a3a;">Dimension 4 · Transclusion</div>
+        <div class="xr-desc">Transclusion is referencing a UUID from another document. The killer app for stable identity.</div>
+      </a>
+      <a href="architecture.html" class="xref-card">
+        <div class="xr-num" style="color:#5a6a82;">Dimension 5 · Architecture</div>
+        <div class="xr-desc">The pipeline that implements parsing and UUID assignment. The runtime's core infrastructure.</div>
+      </a>
+    </div>
+  </section>
+
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p>From Purple Numbers HID/NID analysis, Notion's block model, Tiptap's UniqueID extension, SuperDoc's paraId allocator, and kaos-content's UUID v7 model. Part of the Text Runtime research — July 2026.</p>
+  </div>
+</footer>
+
+</body>
+</html>

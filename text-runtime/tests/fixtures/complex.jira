@@ -1,0 +1,28 @@
+h1. Complex Jira Fixture
+
+h2. Introduction
+This is a complex Jira markup document. It supports *bold* and _italic_ text, as well as {{monospaced}}.
+
+{panel:title=Notice|borderStyle=dashed|borderColor=#ccc|titleBGColor=#F7D6C1|bgColor=#FFFFCE}
+This is a panel macro in Jira.
+{panel}
+
+h3. Lists
+* Item 1
+* Item 2
+** Subitem 1
+** Subitem 2
+
+# Numbered 1
+# Numbered 2
+
+h3. Table
+|| Header 1 || Header 2 ||
+| Data 1 | Data 2 |
+| Data 3 | Data 4 |
+
+h3. Code Block
+{code:python}
+def test():
+    pass
+{code}

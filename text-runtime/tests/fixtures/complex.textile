@@ -1,0 +1,25 @@
+h1. Complex Textile Fixture
+
+h2. Introduction
+
+This is a complex Textile document with *strong* and _emphasis_ formatting. 
+
+bq. This is a blockquote in Textile. It can span multiple lines.
+
+h3. Lists
+
+* Item 1
+* Item 2
+** Subitem 1
+** Subitem 2
+
+h3. Table
+
+|_. Header 1 |_. Header 2 |
+| Cell 1.1 | Cell 1.2 |
+| Cell 2.1 | Cell 2.2 |
+
+h3. Code
+
+bc. def example():
+    return True

@@ -1,0 +1,35 @@
+= Complex AsciiDoc Fixture
+Test Author
+:toc:
+
+== Introduction
+This is a complex AsciiDoc document. It contains *bold* and _italic_ text.
+
+[NOTE]
+====
+This is a note block.
+====
+
+== Lists
+* Item 1
+* Item 2
+** Subitem 2.1
+** Subitem 2.2
+
+== Source Code
+[source,python]
+----
+def greet(name):
+    print(f"Hello {name}")
+----
+
+== Table
+|===
+| Header 1 | Header 2
+
+| Row 1, Col 1
+| Row 1, Col 2
+
+| Row 2, Col 1
+| Row 2, Col 2
+|===

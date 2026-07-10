@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decisions — Text Runtime</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #fafaf8; --text: #1a1a1a; --muted: #6b6b6b; --border: #e2e0dc; --card-bg: #ffffff;
+    --rose: #9b4a6b; --rose-bg: #f3e8ec; --rose-light: #faf3f5;
+    --card-radius: 12px; --transition: 0.25s ease;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 28px; }
+
+  .top-nav {
+    background: var(--card-bg); border-bottom: 1px solid var(--border);
+    padding: 14px 0; position: sticky; top: 0; z-index: 10;
+  }
+  .top-nav .container { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .top-nav .site-title {
+    font-weight: 650; font-size: 1rem; color: var(--text); text-decoration: none;
+    letter-spacing: -0.02em; margin-right: 8px; white-space: nowrap;
+  }
+  .top-nav .sep { color: var(--border); }
+  .top-nav a.nav-link {
+    font-size: 0.8rem; font-weight: 500; color: var(--muted); text-decoration: none;
+    padding: 4px 12px; border-radius: 100px; transition: all var(--transition); white-space: nowrap;
+  }
+  .top-nav a.nav-link:hover { background: var(--rose-bg); color: var(--rose); }
+  .top-nav a.nav-link.active { background: var(--rose); color: #fff; }
+
+  .page-header {
+    padding: 64px 0 40px; text-align: center;
+    background: linear-gradient(180deg, var(--rose-light) 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  .page-header .badge {
+    display: inline-block; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--rose); font-weight: 600; margin-bottom: 12px;
+    padding: 5px 16px; border: 1.5px solid var(--rose); border-radius: 100px;
+  }
+  .page-header h1 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 650; letter-spacing: -0.03em;
+    line-height: 1.2; margin-bottom: 12px;
+  }
+  .page-header .subtitle {
+    font-size: 1.1rem; color: var(--muted); max-width: 600px; margin: 0 auto; font-style: italic;
+  }
+
+  section { padding: 40px 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
+
+  .section-head {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+  }
+  .section-head .s-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0; background: var(--rose-bg); color: var(--rose);
+  }
+  .section-head h2 {
+    font-size: 1.35rem; font-weight: 650; letter-spacing: -0.015em;
+    border-left: 3px solid var(--rose); padding-left: 12px;
+  }
+
+  p { color: #333; margin-bottom: 12px; font-size: 1.02rem; line-height: 1.65; }
+  strong { font-weight: 600; }
+
+  .decision-card {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: var(--card-radius); padding: 24px 28px; margin: 18px 0;
+    border-left: 4px solid var(--rose);
+  }
+  .decision-card .d-num {
+    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--rose); font-weight: 700; margin-bottom: 4px;
+  }
+  .decision-card .d-title {
+    font-size: 1.12rem; font-weight: 650; margin-bottom: 8px;
+  }
+  .decision-card .d-row {
+    margin-bottom: 6px; font-size: 0.94rem; line-height: 1.6;
+  }
+  .decision-card .d-label {
+    display: inline-block; font-size: 0.75rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 2px 8px; border-radius: 4px; margin-right: 8px;
+    min-width: 70px; text-align: center;
+  }
+  .d-label.chosen { background: #e6f2ee; color: #1a7f6e; }
+  .d-label.rejected { background: #f5e8e2; color: #b85a3a; }
+  .d-label.risk { background: #f5ede0; color: #c4853a; }
+  .d-label.sources { background: #ece8f5; color: #4a3b99; }
+  .d-label.tradeoff { background: #e8edf2; color: #4a6a8a; }
+
+  .footer {
+    padding: 36px 0; text-align: center; color: var(--muted);
+    font-size: 0.85rem; border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 600px) {
+    .page-header { padding: 48px 0 28px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-nav">
+  <div class="container">
+    <a href="index.html" class="site-title">Text Runtime</a>
+    <span class="sep">/</span>
+    <a href="engine.html" class="nav-link">Engine</a>
+    <a href="architecture.html" class="nav-link">Architecture</a>
+    <a href="agent-experience.html" class="nav-link">Agent Experience</a>
+    <a href="research.html" class="nav-link">Research</a>
+    <a href="decisions.html" class="nav-link active">Decisions</a>
+    <a href="roadmap.html" class="nav-link">Roadmap</a>
+  </div>
+</div>
+
+<div class="page-header">
+  <div class="container">
+    <p class="badge">8 Decisions · All Settled</p>
+    <h1>Architectural Decisions</h1>
+    <p class="subtitle">What we chose, what we rejected, and why — with sources.</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <section>
+    <div class="section-head">
+      <div class="s-icon">📋</div>
+      <h2>The 8 Decisions</h2>
+    </div>
+
+    <!-- Decision 1 -->
+    <div class="decision-card">
+      <div class="d-num">Decision 1</div>
+      <div class="d-title">Content Lists (referential) over Embedded Content (buffer)</div>
+      <div class="d-row"><span class="d-label chosen">Chosen</span> Content-as-reference model. Documents are lists of pointers to content objects with stable UUIDs.</div>
+      <div class="d-row"><span class="d-label rejected">Rejected</span> Traditional text buffer model — edit a character buffer in place.</div>
+      <div class="d-row"><span class="d-label sources">Sources</span> Xanadu (2000): "Documents, versions and links are structures which point to content and use that content by reference." SiSU: "Object-centric document abstraction." BendScript: blocks with CIDs.</div>
+      <div class="d-row"><span class="d-label risk">Risk</span> Higher complexity than raw text editing. Mitigated by: the human surface stays clean (Markdown). The reference model is purely in the runtime layer.</div>
+      <div class="d-row"><span class="d-label tradeoff">Trade-off</span> Gain: stable addressing, transclusion, provenance. Lose: simplicity of "text is a string — edit it in place."</div>
+    </div>
+
+    <!-- Decision 2 -->
+    <div class="decision-card">
+      <div class="d-num">Decision 2</div>
+      <div class="d-title">UUID v7 (time-ordered) over sequential integers or HIDs</div>
+      <div class="d-row"><span class="d-label chosen">Chosen</span> UUID v7 as the primary identifier for every node.</div>
+      <div class="d-row"><span class="d-label rejected">Rejected</span> HIDs (hierarchical: break on move). Sequential integers (coordination problems). Content-addressed hashes (not human-friendly, require full content).</div>
+      <div class="d-row"><span class="d-label sources">Sources</span> Purple Numbers NID analysis (2001): HIDs "break or become incorrect as the site's content evolves" while NIDs "continue to point to the correct item." UUID v7 spec (RFC 9562, 2024).</div>
+      <div class="d-row"><span class="d-label risk">Risk</span> UUIDs not human-readable. Mitigated by: they never appear in the writing surface. Debug tools show label + UUID.</div>
+      <div class="d-row"><span class="d-label tradeoff">Trade-off</span> Gain: global uniqueness, stability, B-tree friendly. Lose: human readability in debug contexts.</div>
+    </div>
+
+    <!-- Decision 3 -->
+    <div class="decision-card">
+      <div class="d-num">Decision 3</div>
+      <div class="d-title">Sentence-level granularity (primary) over Paragraph-level or Character-level</div>
+      <div class="d-row"><span class="d-label chosen">Chosen</span> Sentence as the primary addressing granularity. Paragraph-level UUIDs also exist. Sub-sentence uses character offsets within a sentence node.</div>
+      <div class="d-row"><span class="d-label rejected">Rejected</span> Paragraph-level only (too coarse — can't annotate individual sentences). Character-level (UUID thrash — every edit creates new sub-nodes).</div>
+      <div class="d-row"><span class="d-label sources">Sources</span> Santhosh Thottingal (2026): six-stage HTML sentence segmentation. Hypothesis (2013): annotations use ranges for arbitrary spans. SiSU: paragraph-level with explicit note that sub-paragraph requires offsets.</div>
+      <div class="d-row"><span class="d-label risk">Risk</span> Sentence detection imperfect for bullet points, code, poetry. Mitigated by: best-effort parse; fall back to containing block if detection fails.</div>
+      <div class="d-row"><span class="d-label tradeoff">Trade-off</span> Gain: right balance of stability and precision. Cost: sentence detection at parse time.</div>
+    </div>
+
+    <!-- Decision 4 -->
+    <div class="decision-card">
+      <div class="d-num">Decision 4</div>
+      <div class="d-title">Applicative Overlays over Embedded Annotations</div>
+      <div class="d-row"><span class="d-label chosen">Chosen</span> Annotations, tags, links, provenance stored separately and reference UUIDs. Never embedded in source text.</div>
+      <div class="d-row"><span class="d-label rejected">Rejected</span> Embedded annotations (HTML-style <code>&lt;a href="..."&gt;</code> or embedded JSON in Markdown comments).</div>
+      <div class="d-row"><span class="d-label sources">Sources</span> Xanadu: "The xanalogical content link is not embedded. It is applicative — applying from outside to content which is already in place with stable addresses." W3C Web Annotation: SpecificResource pattern. Hypothesis.</div>
+      <div class="d-row"><span class="d-label risk">Risk</span> External annotations can be orphaned. Mitigated by: active_partial and orphan states with user-visible indicators.</div>
+      <div class="d-row"><span class="d-label tradeoff">Trade-off</span> Gain: unlimited overlapping annotations from multiple agents. Lose: self-contained-ness of embedded annotations.</div>
+    </div>
+
+    <!-- Decision 5 -->
+    <div class="decision-card">
+      <div class="d-num">Decision 5</div>
+      <div class="d-title">Dual Selectors (position + quote), reconciled at write time</div>
+      <div class="d-row"><span class="d-label chosen">Chosen</span> Every annotation stores both TextPositionSelector (UUID+offset) and TextQuoteSelector (exact text + prefix/suffix). Reconciled at write time.</div>
+      <div class="d-row"><span class="d-label rejected">Rejected</span> Single selector approach (position-only breaks on edit; quote-only is slow and ambiguous).</div>
+      <div class="d-row"><span class="d-label sources">Sources</span> W3C Web Annotation (2017): defines both selectors. Semiont (2025): "The two selectors are not independent guesses — they are reconciled at write time." "A no-overlap invariant rejects any annotation whose selectors disagree."</div>
+      <div class="d-row"><span class="d-label risk">Risk</span> Increased storage per annotation. Mitigated by: selectors are small. Reliability gain worth the cost.</div>
+      <div class="d-row"><span class="d-label tradeoff">Trade-off</span> Gain: robust re-anchoring with fast path + fallback. Cost: storing two selectors + write-time reconciliation.</div>
+    </div>
+
+    <!-- Decision 6 -->
+    <div class="decision-card">
+      <div class="d-num">Decision 6</div>
+      <div class="d-title">Cascading Re-Anchoring with Confidence Scores</div>
+      <div class="d-row"><span class="d-label chosen">Chosen</span> 4-level anchoring: (1) exact UUID+offset, (2) character offset, (3) context-fuzzy (prefix+exact+suffix), (4) exhaustive fuzzy. Each returns confidence 0.0–1.0.</div>
+      <div class="d-row"><span class="d-label rejected">Rejected</span> Single or two-level anchoring (insufficient for real-world content changes).</div>
+      <div class="d-row"><span class="d-label sources">Sources</span> Hypothesis Fuzzy Anchoring (2013): "To achieve robust reattachment of annotations we combine several approaches. We save the information about each target fragment in three different selectors."</div>
+      <div class="d-row"><span class="d-label risk">Risk</span> Strategy 4 can produce false positives. Mitigated by: confidence scores. Below 0.5, show warning.</div>
+      <div class="d-row"><span class="d-label tradeoff">Trade-off</span> Gain: robustness. Cost: anchoring complexity. User sees confidence indicator; system handles complexity.</div>
+    </div>
+
+    <!-- Decision 7 -->
+    <div class="decision-card">
+      <div class="d-num">Decision 7</div>
+      <div class="d-title">SQLite Storage (local-first) over Cloud Service or Custom Engine</div>
+      <div class="d-row"><span class="d-label chosen">Chosen</span> SQLite as the backing store for node tree, annotations, and transclusions.</div>
+      <div class="d-row"><span class="d-label rejected">Rejected</span> Xanadu enfilades (complex, no ecosystem). Cloud-only (no offline). JSON files (no query, no indexing, full reload).</div>
+      <div class="d-row"><span class="d-label sources">Sources</span> SiSU: uses SQLite FTS for full-text search. Our existing DB layer. FTS5 for text search. ACID transactions for edit safety. JSON functions for annotation payloads.</div>
+      <div class="d-row"><span class="d-label tradeoff">Trade-off</span> Gain: local-first, free offline, fast startup. Lose: ability to query across all documents on a server (can sync SQLite when needed).</div>
+    </div>
+
+    <!-- Decision 8 -->
+    <div class="decision-card">
+      <div class="d-num">Decision 8</div>
+      <div class="d-title">Format Plugin System (format-agnostic) over Markdown-only</div>
+      <div class="d-row"><span class="d-label chosen">Chosen</span> Runtime defines a common object model. Format-specific parsers (Markdown, TXT, transcript, DOCX) map to this model. New formats implement a Parser interface.</div>
+      <div class="d-row"><span class="d-label rejected">Rejected</span> Building only for Markdown and assuming it will generalize.</div>
+      <div class="d-row"><span class="d-label sources">Sources</span> SiSU (single abstraction → multiple output formats, 2006–2025). Santhosh Thottingal (HTML segmentation, 2026): different input formats need different parsing strategies.</div>
+      <div class="d-row"><span class="d-label risk">Risk</span> More work upfront. Mitigated by: Markdown is the only parser needed for v1. Interface defined; other parsers added incrementally.</div>
+      <div class="d-row"><span class="d-label tradeoff">Trade-off</span> Gain: future-proofing and format flexibility. Cost: small upfront design cost for the parser interface.</div>
+    </div>
+  </section>
+
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p>Text Runtime · 8 architectural decisions, each with clear rationale and sourcing.</p>
+  </div>
+</footer>
+
+</body>
+</html>

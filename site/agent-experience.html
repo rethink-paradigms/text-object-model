@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Experience — Text Runtime</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #fafaf8; --text: #1a1a1a; --muted: #6b6b6b; --border: #e2e0dc; --card-bg: #ffffff;
+    --amber: #c4853a; --amber-bg: #f5ede0; --amber-light: #faf6f0; --amber-dark: #5a3a15;
+    --green: #1a7f6e; --green-bg: #e6f2ee;
+    --crimson: #b85a3a; --crimson-bg: #f5e8e2;
+    --card-radius: 12px; --transition: 0.25s ease;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 28px; }
+
+  .top-nav {
+    background: var(--card-bg); border-bottom: 1px solid var(--border);
+    padding: 14px 0; position: sticky; top: 0; z-index: 10;
+  }
+  .top-nav .container { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .top-nav .site-title {
+    font-weight: 650; font-size: 1rem; color: var(--text); text-decoration: none;
+    letter-spacing: -0.02em; margin-right: 8px; white-space: nowrap;
+  }
+  .top-nav .sep { color: var(--border); }
+  .top-nav a.nav-link {
+    font-size: 0.8rem; font-weight: 500; color: var(--muted); text-decoration: none;
+    padding: 4px 12px; border-radius: 100px; transition: all var(--transition); white-space: nowrap;
+  }
+  .top-nav a.nav-link:hover { background: var(--amber-bg); color: var(--amber); }
+  .top-nav a.nav-link.active { background: var(--amber); color: #fff; }
+
+  .page-header {
+    padding: 64px 0 40px; text-align: center;
+    background: linear-gradient(180deg, var(--amber-light) 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  .page-header .badge {
+    display: inline-block; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--amber); font-weight: 600; margin-bottom: 12px;
+    padding: 5px 16px; border: 1.5px solid var(--amber); border-radius: 100px;
+  }
+  .page-header h1 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 650; letter-spacing: -0.03em;
+    line-height: 1.2; margin-bottom: 12px;
+  }
+  .page-header .subtitle {
+    font-size: 1.1rem; color: var(--muted); max-width: 640px; margin: 0 auto; font-style: italic;
+  }
+
+  section { padding: 40px 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
+
+  .section-head {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+  }
+  .section-head .s-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0; background: var(--amber-bg); color: var(--amber);
+  }
+  .section-head h2 {
+    font-size: 1.35rem; font-weight: 650; letter-spacing: -0.015em;
+    border-left: 3px solid var(--amber); padding-left: 12px;
+  }
+  .section-head h3 {
+    font-size: 1.1rem; font-weight: 650; letter-spacing: -0.015em;
+    border-left: 3px solid var(--amber); padding-left: 12px;
+  }
+
+  p { color: #333; margin-bottom: 12px; font-size: 1.02rem; line-height: 1.65; }
+  strong { font-weight: 600; }
+  li { color: #444; line-height: 1.7; margin-bottom: 4px; }
+
+  .reframe-box {
+    background: var(--amber-light); border-left: 4px solid var(--amber);
+    padding: 24px 28px; border-radius: var(--card-radius);
+    font-size: 1.08rem; font-weight: 500; line-height: 1.55; color: var(--amber-dark);
+    margin: 16px 0;
+  }
+
+  .layer-card {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: var(--card-radius); padding: 24px 28px; margin: 16px 0;
+    border-left: 4px solid var(--amber);
+  }
+  .layer-card .layer-num {
+    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--amber); font-weight: 700; margin-bottom: 6px;
+  }
+  .layer-card .layer-title {
+    font-size: 1.15rem; font-weight: 650; margin-bottom: 10px;
+    letter-spacing: -0.015em;
+  }
+  .layer-card p { font-size: 0.96rem; }
+  .layer-card .layer-needs {
+    margin-top: 10px; font-size: 0.88rem; color: var(--muted);
+    padding-top: 10px; border-top: 1px solid var(--border);
+  }
+  .layer-card .layer-needs strong { color: var(--amber); }
+
+  .missing-table {
+    width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92rem;
+  }
+  .missing-table th {
+    text-align: left; font-size: 0.75rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); font-weight: 600;
+    padding: 8px 12px; border-bottom: 2px solid var(--border);
+  }
+  .missing-table td {
+    padding: 10px 12px; border-bottom: 1px solid var(--border); color: #444;
+  }
+  .tag-done {
+    display: inline-block; padding: 2px 10px; border-radius: 100px;
+    font-size: 0.78rem; font-weight: 600; background: var(--green-bg); color: var(--green);
+  }
+  .tag-next {
+    display: inline-block; padding: 2px 10px; border-radius: 100px;
+    font-size: 0.78rem; font-weight: 600; background: var(--amber-bg); color: var(--amber);
+  }
+  .tag-open {
+    display: inline-block; padding: 2px 10px; border-radius: 100px;
+    font-size: 0.78rem; font-weight: 600; background: var(--crimson-bg); color: var(--crimson);
+  }
+
+  .rel-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 10px; margin: 14px 0;
+  }
+  .rel-item {
+    padding: 10px 16px; background: var(--amber-bg);
+    border-radius: 8px; font-size: 0.88rem;
+  }
+  .rel-item .rel-name { font-weight: 650; color: var(--amber); }
+  .rel-item .rel-desc { color: var(--muted); font-size: 0.82rem; }
+
+  .code-block {
+    background: #f4f2f0; padding: 16px 20px; border-radius: 8px;
+    font-size: 0.84rem; line-height: 1.6; color: #333; overflow-x: auto;
+    margin: 10px 0;
+  }
+
+  blockquote {
+    border-left: 3px solid var(--amber);
+    padding: 10px 18px; margin: 14px 0;
+    color: #555; font-style: italic; font-size: 0.96rem; line-height: 1.6;
+  }
+
+  .footer {
+    padding: 36px 0; text-align: center; color: var(--muted);
+    font-size: 0.85rem; border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 600px) {
+    .page-header { padding: 48px 0 28px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-nav">
+  <div class="container">
+    <a href="index.html" class="site-title">Text Runtime</a>
+    <span class="sep">/</span>
+    <a href="engine.html" class="nav-link">Engine</a>
+    <a href="architecture.html" class="nav-link">Architecture</a>
+    <a href="agent-experience.html" class="nav-link active">Agent Experience</a>
+    <a href="research.html" class="nav-link">Research</a>
+    <a href="decisions.html" class="nav-link">Decisions</a>
+    <a href="roadmap.html" class="nav-link">Roadmap</a>
+  </div>
+</div>
+
+<div class="page-header">
+  <div class="container">
+    <p class="badge">Design Gap · Not Yet Built</p>
+    <h1>The Agent Experience</h1>
+    <p class="subtitle">The agent is the user. What that means — and what's still missing.</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- The reframe -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🔄</div>
+      <h2>The Core Reframe</h2>
+    </div>
+    <div class="reframe-box">
+      <strong>The agent is the user. Not the human.</strong>
+    </div>
+    <p>The human writes text and reads text. Both activities are pure flow states — the runtime is invisible to them. But the agent is the primary <em>consumer</em> of the runtime's structured representation. Every annotation, every reference, every provenance chain, every transclusion — those interfaces exist <strong>for agents</strong>, not for humans.</p>
+
+    <p>This was not the framing we started with. The original proposal and the storage architecture were designed from the inside out — storage, parsing, identity, annotations. What was never designed is the agent's experience of <em>using</em> the runtime: what it receives when it reads, what it declares when it writes, and how it discovers what exists before a task begins.</p>
+  </section>
+
+  <!-- What's built for agents -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">✅</div>
+      <h2>What's Already Built for Agents</h2>
+    </div>
+    <p>The engine gives agents these primitives:</p>
+    <ul style="margin: 10px 0 10px 24px;">
+      <li><strong>§N sentence markers</strong> — the agent's cursor into text. Session-local, ephemeral</li>
+      <li><strong>Three precision levels</strong> — whole sentence, sub-sentence quote, sentence range</li>
+      <li><strong>Annotation by sentence number</strong> — agent annotates by <code>§14</code>, not by UUID or offset</li>
+      <li><strong>Query + projection</strong> — getNode, search, getAnnotations, projectMarkdown</li>
+      <li><strong>Typed transclusion edges</strong> — 8 predicates for inter-document relationships</li>
+    </ul>
+  </section>
+
+  <!-- Three missing layers -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">❌</div>
+      <h2>The Three Missing Layers</h2>
+    </div>
+
+    <!-- Layer 1 -->
+    <div class="layer-card">
+      <div class="layer-num">Layer 1 — Not Designed</div>
+      <div class="layer-title">Discovery — Before the Task Starts</div>
+      <p>An agent begins a task with a question: <em>what already exists?</em></p>
+      <p>Current design: the agent can call <code>search(query)</code> and get matching nodes. But that's reactive — the agent already has to know what to look for.</p>
+      <div class="layer-needs">
+        <strong>What agents actually need:</strong>
+        <ul style="margin: 8px 0 0 20px;">
+          <li><strong>Corpus overview</strong> — what documents are in the runtime, when ingested, what formats, what size</li>
+          <li><strong>Annotation landscape</strong> — what's already annotated, by which agents, what types, what confidence</li>
+          <li><strong>Open questions</strong> — annotations in orphan or active_partial state — signals of unresolved uncertainty</li>
+          <li><strong>Relationship graph</strong> — what documents cite, derive from, or contradict which others</li>
+          <li><strong>Topic clusters</strong> — what themes cluster across the corpus (structural, not keyword search)</li>
+        </ul>
+        <p style="margin-top: 10px;">The runtime has all this data. It just has no discovery interface.</p>
+      </div>
+    </div>
+
+    <!-- Layer 2 -->
+    <div class="layer-card">
+      <div class="layer-num">Layer 2 — Not Designed</div>
+      <div class="layer-title">Structured Read Brief — During Reading</div>
+      <p>When the runtime projects a document to an agent, the current design sends §N-marked text. But an agent needs the text AND its full epistemic state simultaneously — it needs to know which sentences are contested, which are well-anchored, and what other agents have flagged before it starts reasoning.</p>
+      <div class="layer-needs">
+        <strong>What the read brief should look like:</strong>
+      </div>
+      <div class="code-block">
+Document: "analysis-of-compression.md"
+Ingested: 2026-07-08, v3 (2 re-ingestions since original)
+Annotations: 7 total — 4 active, 2 active_partial, 1 orphan
+  §3: [highlight by intel-researcher: "key claim"] confidence 1.0
+  §14: [comment by web-researcher: "contradicted by source B"] confidence 0.9
+  §§22-24: [tag: "open-question"] confidence 0.8
+Prior references: this document is cited by 3 others
+Derived from: 2 source documents (transclusion edges: cites, derives-from)
+
+§1 The core problem with context compression is...
+§2 ...
+§3 Retrieval-augmented generation solves half the problem...</div>
+      <p style="margin-top: 10px;">The agent reads text AND context simultaneously. It knows which sentences are contested, which are well-anchored, which other agents have flagged things. This is what makes agent-to-agent communication through the runtime possible.</p>
+    </div>
+
+    <!-- Layer 3 -->
+    <div class="layer-card">
+      <div class="layer-num">Layer 3 — Not Designed</div>
+      <div class="layer-title">Output Declaration — After Writing</div>
+      <p>When an agent writes a document, each sentence has a relationship to source material. Currently: nothing captures this. The output goes to disk as clean Markdown, and the epistemic chain is lost.</p>
+      <p>What needs to exist: a lightweight interface for agents to declare output provenance using TROVE relationship types.</p>
+      <div class="layer-needs">
+        <strong>The interface (not yet designed):</strong>
+      </div>
+      <div class="code-block">
+declare_output({
+  document: "my-output.md",
+  sentences: [
+    { sentence: 1, type: "compression", source_uuid: "...", source_sentence: 14 },
+    { sentence: 2, type: "inference", sources: ["...", "..."] },
+    { sentence: 3, type: "original" }
+  ]
+})</div>
+      <p style="margin-top: 10px;">This turns agent output from an opaque Markdown file into a <strong>verifiable, traceable artifact</strong>. The runtime stores these declarations as provenance annotations. Future agents reading the output can see exactly where each claim came from.</p>
+      <blockquote>
+        Most "hallucinations" in retrieval-grounded systems are unfaithful attributions — the agent cites a source that does not support the claim. Output declaration, even partial, is a structural check on this.
+      </blockquote>
+    </div>
+  </section>
+
+  <!-- TROVE -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🔗</div>
+      <h2>TROVE Relationship Types</h2>
+    </div>
+    <p>From ACL 2025 — sentence-level tracing of AI output back to source sentences. The right vocabulary for output declaration:</p>
+    <div class="rel-grid">
+      <div class="rel-item">
+        <div class="rel-name">quotation</div>
+        <div class="rel-desc">Exact or near-exact reproduction of source</div>
+      </div>
+      <div class="rel-item">
+        <div class="rel-name">compression</div>
+        <div class="rel-desc">Summary or distillation of source content</div>
+      </div>
+      <div class="rel-item">
+        <div class="rel-name">inference</div>
+        <div class="rel-desc">Conclusion drawn from source(s)</div>
+      </div>
+      <div class="rel-item">
+        <div class="rel-name">composition</div>
+        <div class="rel-desc">Synthesized from multiple sources</div>
+      </div>
+      <div class="rel-item">
+        <div class="rel-name">original</div>
+        <div class="rel-desc">Genuinely new — no source relationship</div>
+      </div>
+    </div>
+    <p>These map directly onto the 8 BendScript predicates already in the transclusion data model. They need to be surfaced as an agent-facing interface — not just a storage primitive.</p>
+  </section>
+
+  <!-- UUID Migration -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">❓</div>
+      <h2>The UUID Migration / Intent Problem</h2>
+    </div>
+    <p>When an agent transforms text from document A into document B — summarizes it, rewrites it, translates it — what happens to the UUID relationship?</p>
+
+    <div class="layer-card" style="border-left-color: var(--crimson);">
+      <div class="layer-num" style="color: var(--crimson);">Open Question</div>
+      <div class="layer-title">Three cases, one friction</div>
+      <ol style="margin: 10px 0 0 20px; color: #444; line-height: 1.9;">
+        <li><strong>Transclusion</strong> — live reference, changes propagate. UUID stays linked.</li>
+        <li><strong>Derivation</strong> — independent copy, provenance recorded. New UUID, edge to source.</li>
+        <li><strong>Original</strong> — no source relationship. New UUID, no edge.</li>
+      </ol>
+      <p style="margin-top: 12px;">In the current design, the agent has to explicitly declare which case applies. This is friction. Agents transform text constantly. Requiring explicit declarations for every transformation breaks the writing flow — the same problem the runtime solves for humans.</p>
+      <p><strong>The unanswered design question:</strong> Can the runtime infer intent from context? Or is explicit declaration always required? If explicit, what's the minimum viable declaration that doesn't burden the agent?</p>
+    </div>
+  </section>
+
+  <!-- Built vs missing summary -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">📊</div>
+      <h2>What's Built vs. What's Missing</h2>
+    </div>
+    <table class="missing-table">
+      <thead>
+        <tr><th>Layer</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Parse, segment, UUID assign, store</td><td><span class="tag-done">Built (Rust, 10+ formats)</span></td></tr>
+        <tr><td>§N agent cursor</td><td><span class="tag-done">Built (storage-architecture §11)</span></td></tr>
+        <tr><td>W3C annotation storage</td><td><span class="tag-done">Built</span></td></tr>
+        <tr><td>Provenance data model</td><td><span class="tag-done">Built</span></td></tr>
+        <tr><td>Discovery interface</td><td><span class="tag-next">Not designed</span></td></tr>
+        <tr><td>Structured read brief</td><td><span class="tag-next">Not designed</span></td></tr>
+        <tr><td>Output declaration interface</td><td><span class="tag-next">Not designed</span></td></tr>
+        <tr><td>UUID migration / intent protocol</td><td><span class="tag-open">Open question</span></td></tr>
+        <tr><td>Pi SDK tool wrapper</td><td><span class="tag-next">Not built</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p>Text Runtime · The agent is the user.</p>
+  </div>
+</footer>
+
+</body>
+</html>

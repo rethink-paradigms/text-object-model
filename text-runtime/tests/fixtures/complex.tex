@@ -1,0 +1,27 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\title{Complex LaTeX Fixture}
+\author{Test Author}
+\date{\today}
+\begin{document}
+\maketitle
+\section{Introduction}
+This is a complex \LaTeX\ document testing various features. Math inline like $E=mc^2$ or equations:
+\begin{equation}
+\int_{0}^{\infty} e^{-x^2} dx = \frac{\sqrt{\pi}}{2}
+\end{equation}
+\section{Lists and Macros}
+\newcommand{\custommacro}[1]{\textbf{#1}}
+Here is an itemized list using a \custommacro{macro}:
+\begin{itemize}
+    \item First item
+    \item Second item with nested list:
+    \begin{itemize}
+        \item Nested one
+        \item Nested two
+    \end{itemize}
+\end{itemize}
+\section{Conclusion}
+See \href{https://pandoc.org}{Pandoc} for more info.
+\end{document}

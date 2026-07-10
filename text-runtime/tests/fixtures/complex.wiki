@@ -1,0 +1,32 @@
+= Complex MediaWiki Fixture =
+
+== Introduction ==
+This is a complex MediaWiki document. It uses '''bold''' and ''italic'' text.
+
+=== Lists ===
+* Item 1
+* Item 2
+** Subitem 2.1
+** Subitem 2.2
+
+# Numbered 1
+# Numbered 2
+
+=== Table ===
+{| class="wikitable"
+|-
+! Header 1
+! Header 2
+|-
+| Data 1
+| Data 2
+|-
+| Data 3
+| Data 4
+|}
+
+=== Links and References ===
+Here is an external link: [https://pandoc.org Pandoc].
+This is a reference<ref>Test Reference</ref>.
+
+<references />

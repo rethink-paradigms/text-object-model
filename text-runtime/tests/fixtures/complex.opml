@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>Complex OPML Fixture</title>
+    <dateCreated>Fri, 10 Jul 2026 13:58:52 GMT</dateCreated>
+  </head>
+  <body>
+    <outline text="Introduction" _note="This is a complex OPML document.">
+      <outline text="Nested Node 1" />
+      <outline text="Nested Node 2">
+        <outline text="Deeply Nested Node A" />
+        <outline text="Deeply Nested Node B" />
+      </outline>
+    </outline>
+    <outline text="Second Main Section">
+      <outline text="RSS Feed Example" type="rss" xmlUrl="http://example.com/rss" htmlUrl="http://example.com" />
+    </outline>
+  </body>
+</opml>

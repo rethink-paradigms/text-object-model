@@ -1,0 +1,28 @@
+#+TITLE: Complex Org-mode Fixture
+#+AUTHOR: Test Author
+#+OPTIONS: toc:nil
+
+* TODO Introduction
+  DEADLINE: <2026-07-20 Mon>
+  :PROPERTIES:
+  :CUSTOM_ID: intro
+  :END:
+  This is a complex Org-mode file. It features *bold* and /italic/ text.
+
+* Section 2
+** Subsection A
+   Here is a list:
+   - Item 1
+   - Item 2
+     - Subitem 2.1
+     - Subitem 2.2
+
+** Subsection B
+   Here is a table:
+   | Header 1 | Header 2 |
+   |----------+----------|
+   | Data 1   | Data 2   |
+   | Data 3   | Data 4   |
+
+* DONE Conclusion
+  We finished this file!

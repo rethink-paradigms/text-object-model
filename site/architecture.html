@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture — Text Runtime</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #fafaf8; --text: #1a1a1a; --muted: #6b6b6b; --border: #e2e0dc; --card-bg: #ffffff;
+    --slate: #4a6a8a; --slate-bg: #e8edf2; --slate-light: #f3f6f9;
+    --green: #1a7f6e; --green-light: #f2f8f5;
+    --amber: #c4853a; --amber-bg: #f5ede0;
+    --card-radius: 12px; --transition: 0.25s ease;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 28px; }
+
+  .top-nav {
+    background: var(--card-bg); border-bottom: 1px solid var(--border);
+    padding: 14px 0; position: sticky; top: 0; z-index: 10;
+  }
+  .top-nav .container { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .top-nav .site-title {
+    font-weight: 650; font-size: 1rem; color: var(--text); text-decoration: none;
+    letter-spacing: -0.02em; margin-right: 8px; white-space: nowrap;
+  }
+  .top-nav .sep { color: var(--border); }
+  .top-nav a.nav-link {
+    font-size: 0.8rem; font-weight: 500; color: var(--muted); text-decoration: none;
+    padding: 4px 12px; border-radius: 100px; transition: all var(--transition); white-space: nowrap;
+  }
+  .top-nav a.nav-link:hover { background: var(--slate-bg); color: var(--slate); }
+  .top-nav a.nav-link.active { background: var(--slate); color: #fff; }
+
+  .page-header {
+    padding: 64px 0 40px; text-align: center;
+    background: linear-gradient(180deg, var(--slate-light) 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  .page-header .badge {
+    display: inline-block; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--slate); font-weight: 600; margin-bottom: 12px;
+    padding: 5px 16px; border: 1.5px solid var(--slate); border-radius: 100px;
+  }
+  .page-header h1 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 650; letter-spacing: -0.03em;
+    line-height: 1.2; margin-bottom: 12px;
+  }
+  .page-header .subtitle {
+    font-size: 1.1rem; color: var(--muted); max-width: 600px; margin: 0 auto; font-style: italic;
+  }
+
+  section { padding: 40px 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
+
+  .section-head {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+  }
+  .section-head .s-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0; background: var(--slate-bg); color: var(--slate);
+  }
+  .section-head h2 {
+    font-size: 1.35rem; font-weight: 650; letter-spacing: -0.015em;
+    border-left: 3px solid var(--slate); padding-left: 12px;
+  }
+  .section-head h3 {
+    font-size: 1.1rem; font-weight: 650; letter-spacing: -0.015em;
+    border-left: 3px solid var(--slate); padding-left: 12px;
+  }
+
+  p { color: #333; margin-bottom: 12px; font-size: 1.02rem; line-height: 1.65; }
+  strong { font-weight: 600; }
+  li { color: #444; line-height: 1.7; margin-bottom: 4px; }
+
+  .pipeline-svg {
+    background: #f4f2f0; padding: 24px; border-radius: var(--card-radius);
+    text-align: center; margin: 16px 0; overflow-x: auto;
+  }
+
+  .data-table {
+    width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.9rem;
+  }
+  .data-table th {
+    text-align: left; font-size: 0.75rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); font-weight: 600;
+    padding: 8px 12px; border-bottom: 2px solid var(--border);
+  }
+  .data-table td {
+    padding: 10px 12px; border-bottom: 1px solid var(--border); color: #444;
+  }
+  .data-table code {
+    background: var(--slate-bg); color: var(--slate);
+    padding: 1px 6px; border-radius: 4px; font-size: 0.85rem;
+  }
+
+  .strategy-box {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 20px; margin: 10px 0;
+  }
+  .strategy-box .strat-num {
+    font-weight: 700; color: var(--slate); font-size: 0.9rem; margin-bottom: 4px;
+  }
+  .strategy-box .strat-desc { font-size: 0.9rem; color: #555; }
+
+  .interface-box {
+    background: var(--slate-light); border-left: 4px solid var(--slate);
+    padding: 20px 24px; border-radius: 6px; margin: 16px 0;
+  }
+  .interface-box pre {
+    font-size: 0.82rem; line-height: 1.6; color: #333;
+    background: #fff; padding: 12px 16px; border-radius: 6px;
+    margin-top: 10px; overflow-x: auto;
+  }
+
+  pre.block {
+    background: #f4f2f0; padding: 16px 20px; border-radius: 8px;
+    font-size: 0.84rem; line-height: 1.6; color: #333; overflow-x: auto;
+    margin: 10px 0;
+  }
+
+  .footer {
+    padding: 36px 0; text-align: center; color: var(--muted);
+    font-size: 0.85rem; border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 600px) {
+    .page-header { padding: 48px 0 28px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-nav">
+  <div class="container">
+    <a href="index.html" class="site-title">Text Runtime</a>
+    <span class="sep">/</span>
+    <a href="engine.html" class="nav-link">Engine</a>
+    <a href="architecture.html" class="nav-link active">Architecture</a>
+    <a href="agent-experience.html" class="nav-link">Agent Experience</a>
+    <a href="research.html" class="nav-link">Research</a>
+    <a href="decisions.html" class="nav-link">Decisions</a>
+    <a href="roadmap.html" class="nav-link">Roadmap</a>
+  </div>
+</div>
+
+<div class="page-header">
+  <div class="container">
+    <p class="badge">Settled Design</p>
+    <h1>The Architecture</h1>
+    <p class="subtitle">How the 6-stage pipeline, two-store design, and agent interface fit together.</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Pipeline overview -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">⬡</div>
+      <h2>The Ingestion Pipeline (6 Stages)</h2>
+    </div>
+
+    <div class="pipeline-svg">
+      <svg viewBox="0 0 900 180" xmlns="http://www.w3.org/2000/svg" style="max-width: 100%; height: auto;">
+        <defs>
+          <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#e8edf2"/>
+            <stop offset="50%" style="stop-color:#4a6a8a"/>
+            <stop offset="100%" style="stop-color:#e8edf2"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Input -->
+        <rect x="10" y="65" width="100" height="40" rx="8" fill="#f4f2f0" stroke="#4a6a8a" stroke-width="1.5"/>
+        <text x="60" y="90" text-anchor="middle" font-size="12" font-weight="600" fill="#4a6a8a">RAW TEXT</text>
+
+        <!-- Arrow 1 -->
+        <line x1="110" y1="85" x2="145" y2="85" stroke="#4a6a8a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- Stage 1 -->
+        <rect x="145" y="55" width="105" height="60" rx="8" fill="#e8edf2" stroke="#4a6a8a" stroke-width="1.5"/>
+        <text x="197" y="75" text-anchor="middle" font-size="11" font-weight="650" fill="#2d4a6a">Normalize</text>
+        <text x="197" y="95" text-anchor="middle" font-size="9" fill="#6b7a8a">Unicode, line endings</text>
+
+        <line x1="250" y1="85" x2="280" y2="85" stroke="#4a6a8a" stroke-width="1.5"/>
+
+        <!-- Stage 2 -->
+        <rect x="280" y="55" width="105" height="60" rx="8" fill="#e8edf2" stroke="#4a6a8a" stroke-width="1.5"/>
+        <text x="332" y="75" text-anchor="middle" font-size="11" font-weight="650" fill="#2d4a6a">Parse</text>
+        <text x="332" y="95" text-anchor="middle" font-size="9" fill="#6b7a8a">Pandoc AST</text>
+
+        <line x1="385" y1="85" x2="415" y2="85" stroke="#4a6a8a" stroke-width="1.5"/>
+
+        <!-- Stage 3 -->
+        <rect x="415" y="55" width="105" height="60" rx="8" fill="#e8edf2" stroke="#4a6a8a" stroke-width="1.5"/>
+        <text x="467" y="75" text-anchor="middle" font-size="11" font-weight="650" fill="#2d4a6a">Segment</text>
+        <text x="467" y="95" text-anchor="middle" font-size="9" fill="#6b7a8a">icu_segmenter</text>
+
+        <line x1="520" y1="85" x2="550" y2="85" stroke="#4a6a8a" stroke-width="1.5"/>
+
+        <!-- Stage 4 -->
+        <rect x="550" y="55" width="105" height="60" rx="8" fill="#e8edf2" stroke="#4a6a8a" stroke-width="1.5"/>
+        <text x="602" y="75" text-anchor="middle" font-size="11" font-weight="650" fill="#2d4a6a">UUID Assign</text>
+        <text x="602" y="95" text-anchor="middle" font-size="9" fill="#6b7a8a">UUID v7 per node</text>
+
+        <line x1="655" y1="85" x2="685" y2="85" stroke="#4a6a8a" stroke-width="1.5"/>
+
+        <!-- Stage 5 -->
+        <rect x="685" y="55" width="105" height="60" rx="8" fill="#e8edf2" stroke="#4a6a8a" stroke-width="1.5"/>
+        <text x="737" y="75" text-anchor="middle" font-size="11" font-weight="650" fill="#2d4a6a">Write</text>
+        <text x="737" y="95" text-anchor="middle" font-size="9" fill="#6b7a8a">Content + SQLite</text>
+
+        <line x1="790" y1="85" x2="820" y2="85" stroke="#4a6a8a" stroke-width="1.5"/>
+
+        <!-- Stage 6 -->
+        <rect x="820" y="55" width="70" height="60" rx="8" fill="#d0dbe6" stroke="#4a6a8a" stroke-width="1.5"/>
+        <text x="855" y="75" text-anchor="middle" font-size="11" font-weight="650" fill="#2d4a6a">Index</text>
+        <text x="855" y="95" text-anchor="middle" font-size="9" fill="#6b7a8a">FTS5</text>
+
+        <!-- Output row -->
+        <rect x="145" y="130" width="750" height="35" rx="6" fill="#1a7f6e" opacity="0.12" stroke="#1a7f6e" stroke-width="1"/>
+        <text x="520" y="153" text-anchor="middle" font-size="11" font-weight="600" fill="#1a7f6e">OBJECT STORE — stable, addressable tree with UUIDs, annotations, transclusions, provenance</text>
+
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 Z" fill="#4a6a8a"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+
+    <table class="data-table" style="margin-top: 20px;">
+      <thead>
+        <tr><th>Stage</th><th>Input</th><th>Output</th><th>Does</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1. Normalize</td><td>Raw bytes or string</td><td>Normalized unicode + format tag</td><td>NFC, strip invisibles, normalize line endings, detect format</td></tr>
+        <tr><td>2. Parse</td><td>Normalized string</td><td>Pandoc AST JSON</td><td>pandoc-server /batch endpoint; typed nodes, no IDs yet</td></tr>
+        <tr><td>3. Segment</td><td>Pandoc AST</td><td>AST + sentence offsets</td><td>icu_segmenter per paragraph; code blocks/list items are atomic</td></tr>
+        <tr><td>4. UUID Assign</td><td>Raw tree (no IDs)</td><td>Identity tree</td><td>UUID v7 per node; structural hash for re-ingest diff</td></tr>
+        <tr><td>5. Write</td><td>Identity tree</td><td>Content files + SQLite</td><td>Atomic tmp→fsync→rename; single SQLite transaction</td></tr>
+        <tr><td>6. Index</td><td>Persisted records</td><td>FTS5 + activity log</td><td>Content-sync FTS5; append-only activity record</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Two-store -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🗄</div>
+      <h2>Two-Store Design</h2>
+    </div>
+    <p><strong>Text never goes in SQL.</strong> SQL handles structure, identity, annotations, transclusions, and activity history. Pandoc AST JSON files handle content. Two stores, two jobs.</p>
+
+    <pre class="block">
+┌──────────────────────────────────────────────────────┐
+│  .textruntime/                                       │
+│                                                      │
+│  db.sqlite     ← structure, identity, relations      │
+│                   NO text content here               │
+│                                                      │
+│  content/      ← Pandoc AST fragment per block node  │
+│    {00-ff}/       UUID-named, 256-bucket fanout      │
+│      {uuid}.json   format-agnostic                   │
+│                                                      │
+│  tmp/          ← atomic write staging                │
+│  config.json   ← runtime version and settings        │
+└──────────────────────────────────────────────────────┘</pre>
+
+    <p><strong>What gets a content file:</strong> block nodes — paragraph, heading, code_block, list_item, table, blockquote.</p>
+    <p><strong>What doesn't:</strong> sentence nodes (sliced from parent paragraph by char_start/char_end in SQLite), sections and documents (assembled from children on demand).</p>
+  </section>
+
+  <!-- Core data model -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🧱</div>
+      <h2>Core Data Model</h2>
+    </div>
+
+    <h3 style="font-size: 1.05rem; font-weight: 650; margin: 20px 0 10px; color: var(--slate);">NODE</h3>
+    <table class="data-table">
+      <tbody>
+        <tr><td><code>id</code></td><td>UUID v7 — stable forever</td></tr>
+        <tr><td><code>type</code></td><td>document | section | heading | paragraph | sentence | list_item | blockquote | code_block | table | figure</td></tr>
+        <tr><td><code>parent_id</code></td><td>UUID of parent (null for document root)</td></tr>
+        <tr><td><code>children</code></td><td>Ordered array of child UUIDs</td></tr>
+        <tr><td><code>depth</code></td><td>0=document, 1=section, 2=paragraph, 3=sentence</td></tr>
+        <tr><td><code>structural_hash</code></td><td>SHA-256 of normalized plain text</td></tr>
+        <tr><td><code>source_doc_id</code></td><td>UUID of containing document</td></tr>
+        <tr><td><code>text_start / text_end</code></td><td>Char offset in original source</td></tr>
+        <tr><td><code>version</code></td><td>Incremented on change</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size: 1.05rem; font-weight: 650; margin: 20px 0 10px; color: var(--slate);">ANNOTATION (W3C Web Annotation)</h3>
+    <table class="data-table">
+      <tbody>
+        <tr><td><code>id</code></td><td>UUID v7</td></tr>
+        <tr><td><code>type</code></td><td>highlight | comment | tag | link | provenance | ai-note</td></tr>
+        <tr><td><code>target_nodes</code></td><td>Array of node UUIDs</td></tr>
+        <tr><td><code>selectors</code></td><td>Dual: TextPositionSelector + TextQuoteSelector</td></tr>
+        <tr><td><code>confidence</code></td><td>0.0–1.0</td></tr>
+        <tr><td><code>status</code></td><td>active | active_partial | orphan | deleted</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size: 1.05rem; font-weight: 650; margin: 20px 0 10px; color: var(--slate);">TRANSCLUSION</h3>
+    <table class="data-table">
+      <tbody>
+        <tr><td><code>predicate</code></td><td>transcludes | cites | derives-from | responds-to | supports | contradicts | supersedes | exemplifies</td></tr>
+        <tr><td><code>source_node_id / target_node_id</code></td><td>UUIDs of source and target</td></tr>
+        <tr><td><code>version_at_include</code></td><td>Target node version when edge was created</td></tr>
+        <tr><td><code>status</code></td><td>live | stale | orphaned</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Re-ingestion -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🔄</div>
+      <h2>Re-Ingestion Strategy</h2>
+    </div>
+    <p>Re-ingestion is a diff operation against the stored tree — not a fresh parse. Four levels:</p>
+
+    <div class="strategy-box">
+      <div class="strat-num">Level 1 — Exact Match</div>
+      <div class="strat-desc">structural_hash matches + position within ±1 sibling → <strong>keep UUID</strong></div>
+    </div>
+    <div class="strategy-box">
+      <div class="strat-num">Level 2 — Fuzzy Match</div>
+      <div class="strat-desc">text similarity > threshold + position within ±2 siblings → <strong>keep UUID, update text</strong></div>
+    </div>
+    <div class="strategy-box">
+      <div class="strat-num">Level 3 — New Node</div>
+      <div class="strat-desc">no match → <strong>mint new UUID v7</strong></div>
+    </div>
+    <div class="strategy-box">
+      <div class="strat-num">Level 4 — Deleted Node</div>
+      <div class="strat-desc">existing UUID not matched → <strong>mark deleted, keep record; annotations move to orphan</strong></div>
+    </div>
+  </section>
+
+  <!-- Annotation Re-anchoring -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">📍</div>
+      <h2>Annotation Re-Anchoring (4-Strategy Cascade)</h2>
+    </div>
+    <p>Runs on every re-ingestion for each annotation:</p>
+    <ol style="margin: 10px 0 10px 24px; color: #444; line-height: 1.9; font-size: 0.96rem;">
+      <li><strong>UUID exact match, same hash</strong> → confidence 1.0, status: active</li>
+      <li><strong>UUID match, hash changed</strong> → confidence 0.8, status: active_partial</li>
+      <li><strong>TextQuoteSelector match</strong> → confidence varies, status: active_partial</li>
+      <li><strong>No match</strong> → confidence 0.0, status: orphan</li>
+    </ol>
+    <p>Dual selectors reconciled at <strong>write time</strong>. At <strong>read time</strong>: position selector used first (fast path), quote selector as fallback. Fuzzy matching only on the write side — render side uses verbatim only.</p>
+  </section>
+
+  <!-- Agent Interface -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🤖</div>
+      <h2>Agent Interface — §N Sentence Markers</h2>
+    </div>
+    <p>The agent has no cursor. The runtime gives it one. §N sentence markers are injected into projected text — session-local, ephemeral, ~3 chars per sentence. Under the hood: a mapping from marker number to UUID.</p>
+
+    <div class="interface-box">
+      <strong>Projected text (what the agent sees):</strong>
+      <pre>§1 The core problem with context compression is that...
+§2 Most retrieval systems treat documents as flat bags of chunks.
+§3 A structural addressing layer would change this.</pre>
+    </div>
+
+    <h3 style="font-size: 1.05rem; font-weight: 650; margin: 24px 0 10px; color: var(--slate);">Three Precision Levels</h3>
+    <pre class="block">Whole sentence:       { sentence: 14 }
+Sub-sentence:         { sentence: 14, quote: "quantum entanglement" }
+Sentence range:       { sentences: [14, 15, 16] }</pre>
+
+    <p>The agent <strong>never</strong> touches UUIDs, positions, char offsets, or prefix/suffix context. The runtime resolves §14 → UUID → text → selectors. This is production-validated by DeepRead, Tensorlake Citation-Aware RAG, and the Hashline Protocol.</p>
+
+    <h3 style="font-size: 1.05rem; font-weight: 650; margin: 24px 0 10px; color: var(--slate);">Query &amp; Projection Contracts</h3>
+    <pre class="block">// Query
+getNode(uuid)              → Node
+getDocument(uuid)          → Document
+getChildren(uuid)          → Node[]
+getAncestors(uuid)         → Node[]
+search(text)               → Node[] (FTS5)
+getAnnotations(uuid)       → Annotation[]
+getTransclusions(uuid)     → Transclusion[]
+
+// Projection
+projectMarkdown(uuid)      → clean Markdown
+projectPlaintext(uuid)     → plain text
+projectHTML(uuid)          → HTML with data-node-id
+projectAgentBrief(uuid)    → §N-marked + epistemic state (NOT YET BUILT)</pre>
+  </section>
+
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p>Text Runtime · Architecture is settled. Engine is built.</p>
+  </div>
+</footer>
+
+</body>
+</html>

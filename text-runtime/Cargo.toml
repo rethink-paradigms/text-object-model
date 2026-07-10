@@ -1,0 +1,69 @@
+[package]
+name = "text-runtime"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+description = "Local-first text runtime — ingest, structure, annotate, project"
+license = "MIT OR Apache-2.0"
+
+[lib]
+name = "text_runtime"
+path = "src/lib.rs"
+
+
+
+[dependencies]
+# Core: Pandoc integration
+pandoc_ast = "0.8"
+
+# Sentence segmentation
+icu_segmenter = { version = "2", features = ["compiled_data"] }
+
+# SQLite + FTS5
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+# HTTP client (pandoc-server /batch endpoint)
+reqwest = { version = "0.12", features = ["json"] }
+
+# UUID v7
+uuid = { version = "1", features = ["v7", "serde"] }
+
+# Hashing
+sha2 = "0.10"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# JSON
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Error handling
+thiserror = "2"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# File watching (daemon mode)
+notify = { version = "7", features = [] }
+
+# ── Phase 2: Daemon support ───────────────────────────────────────────────────
+arc-swap = "1"                                              # Lock-free config hot-reload
+dashmap = "6"                                               # Concurrent workspace registry
+toml = "0.8"                                                # Config file parsing
+tokio-util = { version = "0.7", features = ["rt"] }        # CancellationToken, TaskTracker
+nix = { version = "0.29", features = ["signal", "fs"] }    # Abstract socket, flock, signal handling
+libc = "0.2"                                                # umask control for socket permissions
+futures-util = "0.3"                                        # BoxFuture for reload callbacks
+dirs = "5"                                                  # XDG home dir expansion (~)
+async-trait = "0.1"                                         # async fn in traits (Handler)
+tracing = "0.1"                                             # Structured logging macros
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }  # Log formatting
+which = "8.0.4"
+
+[dev-dependencies]
+tempfile = "3"
+criterion = { version = "0.5", features = ["html_reports"] }

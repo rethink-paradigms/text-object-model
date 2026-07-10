@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadmap — Text Runtime</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #fafaf8; --text: #1a1a1a; --muted: #6b6b6b; --border: #e2e0dc; --card-bg: #ffffff;
+    --crimson: #b85a3a; --crimson-bg: #f5e8e2; --crimson-light: #faf5f2;
+    --green: #1a7f6e; --green-bg: #e6f2ee;
+    --amber: #c4853a; --amber-bg: #f5ede0;
+    --card-radius: 12px; --transition: 0.25s ease;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 28px; }
+
+  .top-nav {
+    background: var(--card-bg); border-bottom: 1px solid var(--border);
+    padding: 14px 0; position: sticky; top: 0; z-index: 10;
+  }
+  .top-nav .container { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .top-nav .site-title {
+    font-weight: 650; font-size: 1rem; color: var(--text); text-decoration: none;
+    letter-spacing: -0.02em; margin-right: 8px; white-space: nowrap;
+  }
+  .top-nav .sep { color: var(--border); }
+  .top-nav a.nav-link {
+    font-size: 0.8rem; font-weight: 500; color: var(--muted); text-decoration: none;
+    padding: 4px 12px; border-radius: 100px; transition: all var(--transition); white-space: nowrap;
+  }
+  .top-nav a.nav-link:hover { background: var(--crimson-bg); color: var(--crimson); }
+  .top-nav a.nav-link.active { background: var(--crimson); color: #fff; }
+
+  .page-header {
+    padding: 64px 0 40px; text-align: center;
+    background: linear-gradient(180deg, var(--crimson-light) 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  .page-header .badge {
+    display: inline-block; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--crimson); font-weight: 600; margin-bottom: 12px;
+    padding: 5px 16px; border: 1.5px solid var(--crimson); border-radius: 100px;
+  }
+  .page-header h1 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 650; letter-spacing: -0.03em;
+    line-height: 1.2; margin-bottom: 12px;
+  }
+  .page-header .subtitle {
+    font-size: 1.1rem; color: var(--muted); max-width: 640px; margin: 0 auto; font-style: italic;
+  }
+
+  section { padding: 40px 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
+
+  .section-head {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+  }
+  .section-head .s-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0; background: var(--crimson-bg); color: var(--crimson);
+  }
+  .section-head h2 {
+    font-size: 1.35rem; font-weight: 650; letter-spacing: -0.015em;
+    border-left: 3px solid var(--crimson); padding-left: 12px;
+  }
+
+  p { color: #333; margin-bottom: 12px; font-size: 1.02rem; line-height: 1.65; }
+  strong { font-weight: 600; }
+  li { color: #444; line-height: 1.7; margin-bottom: 4px; }
+
+  .phase {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: var(--card-radius); padding: 24px 28px; margin: 20px 0;
+  }
+  .phase .phase-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+  }
+  .phase .phase-num {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 1.1rem; flex-shrink: 0;
+  }
+  .phase.phase-now .phase-num { background: var(--green-bg); color: var(--green); }
+  .phase.phase-next .phase-num { background: var(--amber-bg); color: var(--amber); }
+  .phase.phase-later .phase-num { background: var(--crimson-bg); color: var(--crimson); }
+
+  .phase .phase-title {
+    font-size: 1.12rem; font-weight: 650; letter-spacing: -0.015em;
+  }
+  .phase .phase-status {
+    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 3px 12px; border-radius: 100px; font-weight: 600;
+  }
+  .phase-now .phase-status { background: var(--green-bg); color: var(--green); }
+  .phase-next .phase-status { background: var(--amber-bg); color: var(--amber); }
+  .phase-later .phase-status { background: var(--crimson-bg); color: var(--crimson); }
+
+  .phase .phase-desc { font-size: 0.94rem; color: #555; margin-bottom: 10px; }
+  .phase ul { margin: 8px 0 0 20px; }
+  .phase li { font-size: 0.92rem; }
+
+  .open-question {
+    background: var(--crimson-light); border-left: 4px solid var(--crimson);
+    padding: 18px 22px; border-radius: 6px; margin: 14px 0;
+    font-size: 0.96rem; color: #5a2a15; line-height: 1.55;
+  }
+
+  .footer {
+    padding: 36px 0; text-align: center; color: var(--muted);
+    font-size: 0.85rem; border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 600px) {
+    .page-header { padding: 48px 0 28px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-nav">
+  <div class="container">
+    <a href="index.html" class="site-title">Text Runtime</a>
+    <span class="sep">/</span>
+    <a href="engine.html" class="nav-link">Engine</a>
+    <a href="architecture.html" class="nav-link">Architecture</a>
+    <a href="agent-experience.html" class="nav-link">Agent Experience</a>
+    <a href="research.html" class="nav-link">Research</a>
+    <a href="decisions.html" class="nav-link">Decisions</a>
+    <a href="roadmap.html" class="nav-link active">Roadmap</a>
+  </div>
+</div>
+
+<div class="page-header">
+  <div class="container">
+    <p class="badge">What's Next</p>
+    <h1>Roadmap</h1>
+    <p class="subtitle">Engine built. Now: give agents the interfaces they need to use it productively.</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🎯</div>
+      <h2>Build Plan</h2>
+    </div>
+    <p>The engine — parsing, UUID assignment, storage, projection, annotations, transclusions, agent cursor — is built and tested. The remaining work is about <strong>what agents see and how they declare</strong>.</p>
+
+    <!-- Phase 1 -->
+    <div class="phase phase-now">
+      <div class="phase-header">
+        <div class="phase-num">1</div>
+        <div class="phase-title">Pi SDK Tool Wrapper</div>
+        <div class="phase-status">Next Up</div>
+      </div>
+      <div class="phase-desc">The extension that lets fleet agents call the runtime. This is the bridge between the Rust engine and the agent ecosystem.</div>
+      <ul>
+        <li>Create <code>tools/internal/text-runtime/</code> Pi SDK extension</li>
+        <li>Expose runtime API methods as tools: ingest, project, annotate, search, getNode</li>
+        <li>Handle the §N sentence marker → UUID resolution inside the tool, transparent to agents</li>
+        <li>File-watcher daemon integration for automatic re-ingestion</li>
+      </ul>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="phase phase-next">
+      <div class="phase-header">
+        <div class="phase-num">2</div>
+        <div class="phase-title">Discovery Interface</div>
+        <div class="phase-status">Planned</div>
+      </div>
+      <div class="phase-desc">Give agents a way to understand what's in the corpus before they start a task. Not reactive search — proactive overview.</div>
+      <ul>
+        <li><code>corpus_overview()</code> — documents, formats, sizes, ingestion dates</li>
+        <li><code>annotation_landscape()</code> — what's annotated, by whom, confidence distribution</li>
+        <li><code>open_questions()</code> — orphan and active_partial annotations as signals of uncertainty</li>
+        <li><code>relationship_graph(doc_id)</code> — what cites, derives from, or contradicts this document</li>
+        <li><code>topic_clusters()</code> — structural clustering across corpus</li>
+      </ul>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="phase phase-next">
+      <div class="phase-header">
+        <div class="phase-num">3</div>
+        <div class="phase-title">Structured Read Brief</div>
+        <div class="phase-status">Planned</div>
+      </div>
+      <div class="phase-desc">Augment <code>project()</code> to include epistemic state alongside text. The agent reads the document AND its context simultaneously.</div>
+      <ul>
+        <li><code>projectAgentBrief(uuid)</code> — full document + annotation summary + provenance edges + §N markers</li>
+        <li>Header block: ingestion metadata, annotation counts by status, prior references, derivation chain</li>
+        <li>Per-sentence annotation inlining: §3 gets confidence + agent + type annotations appended</li>
+        <li>Token-efficient format — prioritize signal density</li>
+      </ul>
+    </div>
+
+    <!-- Phase 4 -->
+    <div class="phase phase-next">
+      <div class="phase-header">
+        <div class="phase-num">4</div>
+        <div class="phase-title">Output Declaration</div>
+        <div class="phase-status">Planned</div>
+      </div>
+      <div class="phase-desc">Let agents declare where their output came from using TROVE relationship types.</div>
+      <ul>
+        <li><code>declare_output({ document, sentences: [{ sentence, type, source_uuid, source_sentence }] })</code></li>
+        <li>TROVE relationship types: quotation, compression, inference, composition, original</li>
+        <li>Stored as provenance annotations in SQLite</li>
+        <li>Future agents reading the output can trace every claim to its source</li>
+      </ul>
+    </div>
+
+    <!-- Phase 5 -->
+    <div class="phase phase-later">
+      <div class="phase-header">
+        <div class="phase-num">5</div>
+        <div class="phase-title">UUID Migration / Intent Protocol</div>
+        <div class="phase-status">Open Question</div>
+      </div>
+      <div class="phase-desc">When an agent transforms text from one document into another, what happens to the UUID relationship? This is the deepest open design question.</div>
+    </div>
+  </section>
+
+  <!-- Open Questions -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">❓</div>
+      <h2>Open Design Questions</h2>
+    </div>
+
+    <div class="open-question">
+      <strong>UUID migration on agent transformation.</strong> When an agent summarizes document A as document B, should B's sentences carry provenance edges to A's sentences? If so, should the agent declare this explicitly or can the runtime infer it? Explicit declaration is friction. Inference is fragile.
+    </div>
+
+    <div class="open-question">
+      <strong>Minimum viable output declaration.</strong> If agents won't declare provenance for every sentence (too much friction), what's the minimum that provides value? Document-level "derived from" edge + key sentences flagged manually?
+    </div>
+
+    <div class="open-question">
+      <strong>Discovery without search.</strong> The discovery interface is meant to let agents understand the corpus without querying. But what's the "right" amount of information to surface? Too much increases token cost. Too little leaves the agent uninformed.
+    </div>
+
+    <div class="open-question">
+      <strong>Confidence decay over re-ingestions.</strong> When a document is re-ingested 5 times, an annotation that survived all 5 re-ingestions via fuzzy matching should probably carry a lower confidence than one that survived via exact match. How should confidence decay compound?
+    </div>
+
+    <div class="open-question">
+      <strong>Daemon mode production readiness.</strong> Code exists. Needs integration testing with real file-watch scenarios: what happens when a file is deleted mid-ingest? When a directory is moved? When thousands of files change simultaneously?
+    </div>
+  </section>
+
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p>Text Runtime · Engine built. Agent interfaces are next.</p>
+  </div>
+</footer>
+
+</body>
+</html>

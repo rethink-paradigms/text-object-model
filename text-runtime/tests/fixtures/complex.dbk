@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<article>
+  <articleinfo>
+    <title>Complex DocBook Fixture</title>
+    <author><firstname>Test</firstname><surname>Author</surname></author>
+  </articleinfo>
+  <section>
+    <title>Introduction</title>
+    <para>This is a complex DocBook document containing <emphasis role="bold">bold</emphasis> and <emphasis>italic</emphasis> text.</para>
+    <note><para>This is a note admonition.</para></note>
+  </section>
+  <section>
+    <title>Lists and Tables</title>
+    <itemizedlist>
+      <listitem><para>Item 1</para></listitem>
+      <listitem><para>Item 2</para>
+        <itemizedlist>
+          <listitem><para>Subitem 2.1</para></listitem>
+          <listitem><para>Subitem 2.2</para></listitem>
+        </itemizedlist>
+      </listitem>
+    </itemizedlist>
+    <table>
+      <title>Sample Table</title>
+      <tgroup cols="2">
+        <thead><row><entry>Header 1</entry><entry>Header 2</entry></row></thead>
+        <tbody><row><entry>Data 1</entry><entry>Data 2</entry></row></tbody>
+      </tgroup>
+    </table>
+  </section>
+</article>

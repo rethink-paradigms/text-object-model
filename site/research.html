@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Research — Text Runtime</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #fafaf8; --text: #1a1a1a; --muted: #6b6b6b; --border: #e2e0dc; --card-bg: #ffffff;
+    --ink: #4a3b99; --ink-bg: #ece8f5; --ink-light: #f5f3fa;
+    --card-radius: 12px; --transition: 0.25s ease;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 28px; }
+
+  .top-nav {
+    background: var(--card-bg); border-bottom: 1px solid var(--border);
+    padding: 14px 0; position: sticky; top: 0; z-index: 10;
+  }
+  .top-nav .container { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .top-nav .site-title {
+    font-weight: 650; font-size: 1rem; color: var(--text); text-decoration: none;
+    letter-spacing: -0.02em; margin-right: 8px; white-space: nowrap;
+  }
+  .top-nav .sep { color: var(--border); }
+  .top-nav a.nav-link {
+    font-size: 0.8rem; font-weight: 500; color: var(--muted); text-decoration: none;
+    padding: 4px 12px; border-radius: 100px; transition: all var(--transition); white-space: nowrap;
+  }
+  .top-nav a.nav-link:hover { background: var(--ink-bg); color: var(--ink); }
+  .top-nav a.nav-link.active { background: var(--ink); color: #fff; }
+
+  .page-header {
+    padding: 64px 0 40px; text-align: center;
+    background: linear-gradient(180deg, var(--ink-light) 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  .page-header .badge {
+    display: inline-block; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--ink); font-weight: 600; margin-bottom: 12px;
+    padding: 5px 16px; border: 1.5px solid var(--ink); border-radius: 100px;
+  }
+  .page-header h1 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 650; letter-spacing: -0.03em;
+    line-height: 1.2; margin-bottom: 12px;
+  }
+  .page-header .subtitle {
+    font-size: 1.1rem; color: var(--muted); max-width: 640px; margin: 0 auto; font-style: italic;
+  }
+
+  section { padding: 40px 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
+
+  .section-head {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+  }
+  .section-head .s-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0; background: var(--ink-bg); color: var(--ink);
+  }
+  .section-head h2 {
+    font-size: 1.35rem; font-weight: 650; letter-spacing: -0.015em;
+    border-left: 3px solid var(--ink); padding-left: 12px;
+  }
+
+  p { color: #333; margin-bottom: 12px; font-size: 1.02rem; line-height: 1.65; }
+  strong { font-weight: 600; }
+  li { color: #444; line-height: 1.7; margin-bottom: 4px; }
+
+  .pullout {
+    background: var(--ink-light); border-left: 4px solid var(--ink);
+    padding: 20px 24px; border-radius: 6px; margin: 16px 0;
+    font-size: 1.05rem; line-height: 1.55; color: #3a2e6b;
+  }
+
+  .timeline {
+    position: relative; padding-left: 28px; margin: 20px 0;
+    border-left: 2px solid var(--ink-bg);
+  }
+  .timeline-item {
+    margin-bottom: 20px; position: relative;
+  }
+  .timeline-item::before {
+    content: ''; position: absolute; left: -34px; top: 6px;
+    width: 10px; height: 10px; border-radius: 50%; background: var(--ink);
+  }
+  .timeline-item .tl-year {
+    font-size: 0.82rem; font-weight: 700; color: var(--ink);
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;
+  }
+  .timeline-item .tl-title {
+    font-weight: 650; font-size: 1.02rem; margin-bottom: 4px;
+  }
+  .timeline-item .tl-desc {
+    font-size: 0.9rem; color: var(--muted); line-height: 1.55;
+  }
+
+  .findings-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px; margin: 16px 0;
+  }
+  .finding-card {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 18px 20px;
+  }
+  .finding-card .fn-num {
+    font-size: 0.78rem; font-weight: 700; color: var(--ink);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;
+  }
+  .finding-card .fn-title {
+    font-weight: 650; font-size: 0.96rem; margin-bottom: 6px;
+  }
+  .finding-card .fn-desc {
+    font-size: 0.87rem; color: var(--muted); line-height: 1.55;
+  }
+
+  .source-table {
+    width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.88rem;
+  }
+  .source-table th {
+    text-align: left; font-size: 0.75rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); font-weight: 600;
+    padding: 8px 12px; border-bottom: 2px solid var(--border);
+  }
+  .source-table td {
+    padding: 8px 12px; border-bottom: 1px solid var(--border); color: #444;
+  }
+  .source-table .src-name { font-weight: 600; color: var(--ink); }
+
+  .footer {
+    padding: 36px 0; text-align: center; color: var(--muted);
+    font-size: 0.85rem; border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 600px) {
+    .page-header { padding: 48px 0 28px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-nav">
+  <div class="container">
+    <a href="index.html" class="site-title">Text Runtime</a>
+    <span class="sep">/</span>
+    <a href="engine.html" class="nav-link">Engine</a>
+    <a href="architecture.html" class="nav-link">Architecture</a>
+    <a href="agent-experience.html" class="nav-link">Agent Experience</a>
+    <a href="research.html" class="nav-link active">Research</a>
+    <a href="decisions.html" class="nav-link">Decisions</a>
+    <a href="roadmap.html" class="nav-link">Roadmap</a>
+  </div>
+</div>
+
+<div class="page-header">
+  <div class="container">
+    <p class="badge">60 Years of Prior Art</p>
+    <h1>Research Landscape</h1>
+    <p class="subtitle">The converging pattern. The sources. What the field learned before we started building.</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- The Converging Pattern -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">⬡</div>
+      <h2>The Converging Pattern</h2>
+    </div>
+    <p>Across 60+ years of prior work — from Ted Nelson's Xanadu (1960) through Engelbart's Augment (1970s), Purple Numbers (2000s), W3C Web Annotation (2013), Obsidian block references (2020), and BendScript (2024) — <strong>a single converging architectural pattern emerges</strong>.</p>
+
+    <div class="pullout">
+      <strong>One pattern, discovered six times.</strong> Xanadu, Purple Numbers, SiSU, Hypothesis, Notion, and BendScript all converged on the same architecture: separate content from structure, assign stable identifiers to every node, use applicative overlays for everything else. The Text Runtime is the first system designed to combine all their lessons.
+    </div>
+
+    <h3 style="font-size: 1.05rem; font-weight: 650; margin: 24px 0 14px; color: var(--ink);">The Referential Document Model</h3>
+    <p>Every system that solved this problem converged on: <strong>documents are lists of pointers to content objects with stable IDs</strong> — not character buffers.</p>
+    <ol style="margin: 10px 0 10px 24px;">
+      <li><strong>Content is used by reference, not by value.</strong> Documents are lists of pointers to content objects. Editing changes the list of pointers, never the content objects themselves. (Xanadu's content lists, Hollywood's EDL model)</li>
+      <li><strong>Stable IDs are assigned at parse time.</strong> Two kinds: HIDs (hierarchical, break on move) and NIDs (persistent, survive moves). The field converged on NIDs as primary. (Purple Numbers)</li>
+      <li><strong>Links/annotations are applicative overlays.</strong> They sit outside the content and reference UUIDs. Enables profuse, overlapping, multi-author annotations without coordination. (Xanadu, Hypothesis, W3C)</li>
+      <li><strong>Anchoring is never perfect — use strategies with fallbacks.</strong> Hypothesis's 4-strategy cascade is canonical: exact → position → context-fuzzy → exhaustive.</li>
+      <li><strong>Dual selectors for robustness.</strong> Store both precise (UUID+offset) and fuzzy (text quote+prefix/suffix) selectors. Reconcile at write time. (W3C, Semiont)</li>
+    </ol>
+
+    <blockquote style="border-left: 3px solid var(--ink); padding: 14px 20px; margin: 16px 0; color: #555; font-style: italic; font-size: 0.96rem; line-height: 1.6;">
+      "We give any text (including newly-input text strings) a permanent address, and thereafter use that text by pointing to it. Thus text is used 'in place', accessible simultaneously to many possible applicative uses."<br>
+      <span style="font-style: normal; font-size: 0.85rem; color: var(--muted);">— Ted Nelson, Xanalogical Structure, 2000</span>
+    </blockquote>
+  </section>
+
+  <!-- Timeline -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">📅</div>
+      <h2>Prior Art Timeline</h2>
+    </div>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="tl-year">1960–2000</div>
+        <div class="tl-title">Project Xanadu (Ted Nelson)</div>
+        <div class="tl-desc">Permanent content addresses. Content lists. Applicative links. Transclusion as first-class operation. The foundational vision for structured text.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-year">1970s</div>
+        <div class="tl-title">Augment / NLS (Doug Engelbart)</div>
+        <div class="tl-desc">Statement-level addressing with stable identifiers. The precursor to Purple Numbers' HID/NID distinction.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-year">2001–2005</div>
+        <div class="tl-title">Purple Numbers (Eugene Eric Kim)</div>
+        <div class="tl-desc">HID vs NID analysis. First wiki with automated fine-grained addressability (PurpleWiki). Demonstrated NID persistence for dynamic documents.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-year">2006–2025</div>
+        <div class="tl-title">SiSU / Spine (Ralph Amissah)</div>
+        <div class="tl-desc">Parse lightweight markup → abstract object model → emit any format. Object citation numbers stable across formats and translations. SQLite FTS integration.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-year">2013</div>
+        <div class="tl-title">Hypothesis Fuzzy Anchoring</div>
+        <div class="tl-desc">The canonical 4-strategy cascading fallback for annotation re-anchoring. Production-validated across millions of web annotations.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-year">2017</div>
+        <div class="tl-title">W3C Web Annotation Data Model</div>
+        <div class="tl-desc">Standard selector vocabulary: TextPositionSelector, TextQuoteSelector, RangeSelector, FragmentSelector, refinedBy nesting. Every edge case covered.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-year">2019+</div>
+        <div class="tl-title">W3C Scroll-to-Text Fragment</div>
+        <div class="tl-desc">Text directive in URLs: <code>:~:text=prefix-,startText,-,endText,suffix-</code>. Fragment directive stripped from URL before page sees it.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-year">2020–2025</div>
+        <div class="tl-title">Obsidian Block References</div>
+        <div class="tl-desc">Most widely deployed block reference system. <code>^block-id</code> + <code>![[Note#^id]]</code> transclusion. Showed what works and where plain-text limits hit.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-year">2024</div>
+        <div class="tl-title">BendScript</div>
+        <div class="tl-desc">Graph-first document protocol. Blocks + edges + content-addressed IDs. 9 typed edge predicates. Span-level addressing. Round-trip verified.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-year">2025</div>
+        <div class="tl-title">Semiont (The AI Alliance)</div>
+        <div class="tl-desc">W3C-compliant annotation for AI-assisted markup. Write-time selector reconciliation. LLMs supply <code>exact</code> + prefix/suffix; system computes offsets.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key findings -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">🔍</div>
+      <h2>Key Research Findings</h2>
+    </div>
+    <p>The research surveyed 30+ sources across 6 sub-domains. Here is what each domain taught us:</p>
+
+    <div class="findings-grid">
+      <div class="finding-card">
+        <div class="fn-num">Finding 1</div>
+        <div class="fn-title">Stable Node Identity</div>
+        <div class="fn-desc">UUID-based identity is production-proven (Notion, Tiptap). CRDTs provide character-level permanence (Yjs). Content-hash identity self-verifies but breaks on edits. We chose UUID v7 per structural node.</div>
+      </div>
+      <div class="finding-card">
+        <div class="fn-num">Finding 2</div>
+        <div class="fn-title">Annotation Anchoring</div>
+        <div class="fn-desc">W3C Web Annotation is the mature standard. Multi-selector anchoring (position + quote) is the only production-proven strategy for robustness. Store both. Try position first, fall back to quote.</div>
+      </div>
+      <div class="finding-card">
+        <div class="fn-num">Finding 3</div>
+        <div class="fn-title">Transclusion</div>
+        <div class="fn-desc">Exists but is fragile — almost universally at document/section level, never paragraph. No mainstream tool has stable paragraph identifiers. A Text Runtime with UUID addresses enables the first truly stable transclusion system.</div>
+      </div>
+      <div class="finding-card">
+        <div class="fn-num">Finding 4</div>
+        <div class="fn-title">Text Provenance</div>
+        <div class="fn-desc">C2PA handles cryptographic content provenance. Wire does epistemic provenance for AI retrieval. TROVE traces sentences to sources. All are about attribution, not addressing. The runtime provides the substrate they annotate.</div>
+      </div>
+      <div class="finding-card">
+        <div class="fn-num">Finding 5</div>
+        <div class="fn-title">Structural Parsing</div>
+        <div class="fn-desc">mdast, Pandoc AST, ProseMirror — all parse text into trees, but none give stable IDs at paragraph/sentence level outside their context. The runtime bridges structural parsing with stable identity.</div>
+      </div>
+      <div class="finding-card">
+        <div class="fn-num">Finding 6</div>
+        <div class="fn-title">Collaborative Editing</div>
+        <div class="fn-desc">The Yjs + ProseMirror ecosystem has solved character-level stable identity. Yjs CRDT gives permanent identity to every character position. The runtime layer adds block/sentence-level identity on top.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key sources -->
+  <section>
+    <div class="section-head">
+      <div class="s-icon">📚</div>
+      <h2>Key Sources</h2>
+    </div>
+    <table class="source-table">
+      <thead>
+        <tr><th>Source</th><th>Year</th><th>Key Insight</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="src-name">Xanadu (Nelson)</td><td>1960–2000</td><td>Content lists, permanent addresses, applicative links, transclusion</td>
+        </tr>
+        <tr>
+          <td class="src-name">Purple Numbers (Kim)</td><td>2001–2005</td><td>HID vs NID, NID persistence for dynamic documents</td>
+        </tr>
+        <tr>
+          <td class="src-name">Hypothesis Fuzzy Anchoring</td><td>2013</td><td>4-strategy cascading fallback for annotation anchors</td>
+        </tr>
+        <tr>
+          <td class="src-name">W3C Web Annotation</td><td>2017</td><td>Dual selectors, SpecificResource model, FragmentSelector</td>
+        </tr>
+        <tr>
+          <td class="src-name">W3C Scroll-to-Text Fragment</td><td>2019+</td><td>Text directive syntax, fragment directive stripping</td>
+        </tr>
+        <tr>
+          <td class="src-name">SiSU / Spine</td><td>2006–2025</td><td>Object model with stable citation numbers across formats</td>
+        </tr>
+        <tr>
+          <td class="src-name">Obsidian Block References</td><td>2020–2025</td><td><code>^block-id</code> in Markdown, transclusion via <code>![[note#^id]]</code></td>
+        </tr>
+        <tr>
+          <td class="src-name">BendScript</td><td>2024</td><td>Graph-first protocol, span-level edges, content-addressed IDs</td>
+        </tr>
+        <tr>
+          <td class="src-name">Semiont (AI Alliance)</td><td>2025</td><td>Write-time selector reconciliation, LLM-aware annotation</td>
+        </tr>
+        <tr>
+          <td class="src-name">Local-First Collaboration Contract</td><td>2025</td><td>Rigorous anchoring contract, relocation policies, "no silent drift"</td>
+        </tr>
+        <tr>
+          <td class="src-name">TROVE (ACL 2025)</td><td>2025</td><td>Sentence-level provenance tracing, relationship classification</td>
+        </tr>
+        <tr>
+          <td class="src-name">Wire Epistemic Provenance</td><td>2025</td><td>AI agent consumption of provenance at inference time</td>
+        </tr>
+        <tr>
+          <td class="src-name">Santhosh Thottingal</td><td>2026</td><td>Six-stage HTML sentence segmentation pipeline</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p>Text Runtime · Synthesized from 30+ sources across 60 years of prior art.</p>
+  </div>
+</footer>
+
+</body>
+</html>

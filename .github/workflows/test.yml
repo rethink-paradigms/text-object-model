@@ -61,7 +61,7 @@ jobs:
       # own cwd (text-runtime-mcp/), so a relative path would not resolve.
       TEXT_RUNTIME_BIN: ${{ github.workspace }}/text-runtime/target/release/text-runtime
       # Isolated scratch corpus so tests never touch ~/.textruntime on the runner.
-      TEXT_RUNTIME_DIR: /tmp/textruntime
+      TEXT_RUNTIME_DIR: ${{ runner.temp }}/textruntime
       TEXT_RUNTIME_PANDOC_PORT: "8499"
     steps:
       - run: echo "bin=$TEXT_RUNTIME_BIN"

@@ -62,9 +62,9 @@ jobs:
     env:
       # Absolute path: the MCP server resolves TEXT_RUNTIME_BIN relative to its
       # own cwd (text-runtime-mcp/), so a relative path would not resolve.
+      # (github context is valid at job-level env; runner context is NOT — see
+      # the step-level TEXT_RUNTIME_DIR below.)
       TEXT_RUNTIME_BIN: ${{ github.workspace }}/text-runtime/target/release/text-runtime
-      # Isolated scratch corpus so tests never touch ~/.textruntime on the runner.
-      TEXT_RUNTIME_DIR: ${{ runner.temp }}/textruntime
       TEXT_RUNTIME_PANDOC_PORT: "8499"
     steps:
       - uses: actions/checkout@v4
@@ -97,7 +97,13 @@ jobs:
         run: uv sync --project text-runtime-mcp
 
       - name: Smoke test
+        env:
+          # Isolated scratch corpus so tests never touch ~/.textruntime on the
+          # runner. (runner context is only valid at step level, not job env.)
+          TEXT_RUNTIME_DIR: ${{ runner.temp }}/textruntime
         run: uv run --project text-runtime-mcp python text-runtime-mcp/smoke_test.py
 
       - name: E2E test
+        env:
+          TEXT_RUNTIME_DIR: ${{ runner.temp }}/textruntime
         run: uv run --project text-runtime-mcp python text-runtime-mcp/e2e_test.py

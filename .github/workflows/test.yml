@@ -59,7 +59,7 @@ jobs:
     env:
       # Absolute path: the MCP server resolves TEXT_RUNTIME_BIN relative to its
       # own cwd (text-runtime-mcp/), so a relative path would not resolve.
-      TEXT_RUNTIME_BIN: /static/path/text-runtime
+      TEXT_RUNTIME_BIN: ${{ github.workspace }}/text-runtime/target/release/text-runtime
       # Isolated scratch corpus so tests never touch ~/.textruntime on the runner.
       TEXT_RUNTIME_DIR: /tmp/textruntime
       TEXT_RUNTIME_PANDOC_PORT: "8499"

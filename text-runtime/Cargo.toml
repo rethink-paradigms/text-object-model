@@ -55,7 +55,7 @@ arc-swap = "1"                                              # Lock-free config h
 dashmap = "6"                                               # Concurrent workspace registry
 toml = "0.8"                                                # Config file parsing
 tokio-util = { version = "0.7", features = ["rt"] }        # CancellationToken, TaskTracker
-nix = { version = "0.29", features = ["signal", "fs"] }    # Abstract socket, flock, signal handling
+nix = { version = "0.29", features = ["signal", "fs", "socket"] }    # Abstract socket (Linux), flock, signal handling
 libc = "0.2"                                                # umask control for socket permissions
 futures-util = "0.3"                                        # BoxFuture for reload callbacks
 dirs = "5"                                                  # XDG home dir expansion (~)

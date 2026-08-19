@@ -77,8 +77,23 @@ impl DaemonLock {
     fn acquire_linux(pid_file: PathBuf, app_name: &str) -> Result<Self, TextRuntimeError> {
         use nix::sys::socket::{self, AddressFamily, SockFlag, SockType, UnixAddr};
 
-        // Build the abstract socket name: \0<app_name>
-        let addr = UnixAddr::new_abstract(app_name.as_bytes()).map_err(|e| {
+        // Abstract sockets live in the kernel's GLOBAL abstract namespace, so a
+        // bare `\0{app_name}` would make EVERY daemon instance on the host
+        // (e.g. multiple test daemons, or several deployments) collide — the
+        // first binds the name, the rest get EADDRINUSE. Scope the lock to the
+        // daemon's state dir so single-instance semantics apply per state dir,
+        // not per host.
+        use std::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        (
+            app_name,
+            pid_file.parent().unwrap_or(std::path::Path::new("/")),
+        )
+            .hash(&mut hasher);
+        let lock_name = format!("{}-{:016x}", app_name, hasher.finish());
+
+        // Build the abstract socket name: \0<lock_name>
+        let addr = UnixAddr::new_abstract(lock_name.as_bytes()).map_err(|e| {
             TextRuntimeError::DaemonLockError(format!("abstract socket addr: {}", e))
         })?;
 

@@ -1,5 +1,9 @@
 # text-object-model
 
+[![CI](https://github.com/rethink-paradigms/text-object-model/actions/workflows/ci.yml/badge.svg)](https://github.com/rethink-paradigms/text-object-model/actions/workflows/ci.yml)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/rethink-paradigms/text-object-model/releases)
+
 Local-first text runtime with an agent-facing MCP layer: ingest, structure,
 annotate, and project text documents with UUID-stable identity, W3C Web
 Annotations, and content-addressed persistence.

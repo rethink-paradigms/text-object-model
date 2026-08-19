@@ -75,10 +75,7 @@ impl DaemonLock {
 #[cfg(any(target_os = "linux", target_os = "android"))]
 impl DaemonLock {
     fn acquire_linux(pid_file: PathBuf, app_name: &str) -> Result<Self, TextRuntimeError> {
-        use nix::sys::socket::{
-            self, AddressFamily, SockFlag, SockType, SockaddrStorage, UnixAddr,
-        };
-        use std::os::unix::io::OwnedFd;
+        use nix::sys::socket::{self, AddressFamily, SockFlag, SockType, UnixAddr};
 
         // Build the abstract socket name: \0<app_name>
         let addr = UnixAddr::new_abstract(app_name.as_bytes()).map_err(|e| {
@@ -93,8 +90,8 @@ impl DaemonLock {
         )
         .map_err(|e| TextRuntimeError::DaemonLockError(format!("socket(): {}", e)))?;
 
-        let sock_addr = SockaddrStorage::from(addr);
-        match socket::bind(sock.as_raw_fd(), &sock_addr) {
+        // nix 0.29: bind takes &dyn SockaddrLike — UnixAddr implements it directly.
+        match socket::bind(sock.as_raw_fd(), &addr) {
             Ok(()) => {
                 // We are the single instance — write PID file
                 let _ = write_pid_file(&pid_file);

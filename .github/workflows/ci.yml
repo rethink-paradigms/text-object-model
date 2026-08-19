@@ -34,7 +34,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends pandoc
-          curl -sL https://github.com/jgm/pandoc/releases/download/3.1.3/pandoc-3.10-linux-amd64.tar.gz -o /tmp/pandoc.tar.gz
+          curl -sL https://github.com/jgm/pandoc/releases/download/3.10/pandoc-3.10-linux-amd64.tar.gz -o /tmp/pandoc.tar.gz
           tar xzf /tmp/pandoc.tar.gz -C /tmp
           sudo cp /tmp/pandoc-3.10/bin/pandoc-server /usr/local/bin/
           pandoc-server --version
@@ -80,7 +80,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends pandoc
-          curl -sL https://github.com/jgm/pandoc/releases/download/3.1.3/pandoc-3.10-linux-amd64.tar.gz -o /tmp/pandoc.tar.gz
+          curl -sL https://github.com/jgm/pandoc/releases/download/3.10/pandoc-3.10-linux-amd64.tar.gz -o /tmp/pandoc.tar.gz
           tar xzf /tmp/pandoc.tar.gz -C /tmp
           sudo cp /tmp/pandoc-3.10/bin/pandoc-server /usr/local/bin/
           pandoc-server --version

@@ -17,6 +17,7 @@ from __future__ import annotations
 import atexit
 import json
 import os
+import shutil
 import subprocess
 import time
 import urllib.request
@@ -69,8 +70,18 @@ def _ensure_pandoc() -> None:
         _pandoc_proc = None
 
     if _pandoc_proc is None or _pandoc_proc.poll() is not None:
+        # Prefer the standalone pandoc-server binary. Ubuntu's pandoc package
+        # is compiled WITHOUT the 'server' flag, so `pandoc server` would exit
+        # immediately there; the official tarball's pandoc-server works on all
+        # platforms. Fall back to `pandoc server` for pandoc >= 3.0 installs
+        # that do support the subcommand (e.g. Homebrew on macOS).
+        server_bin = shutil.which("pandoc-server")
+        if server_bin:
+            cmd: list[str] = [server_bin, "--port", str(PANDOC_PORT)]
+        else:
+            cmd = ["pandoc", "server", "--port", str(PANDOC_PORT)]
         _pandoc_proc = subprocess.Popen(
-            ["pandoc", "server", "--port", str(PANDOC_PORT)],
+            cmd,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )

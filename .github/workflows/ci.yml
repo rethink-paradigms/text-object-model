@@ -27,13 +27,17 @@ jobs:
         with:
           path: text-runtime
 
-      # Integration tests ingest real formats through a pandoc server. The
-      # crate's pandoc_mgr checks `which pandoc-server` and falls back to
-      # `pandoc server`, which the apt `pandoc` package provides.
-      - name: Install pandoc
+      # Integration tests ingest real formats through a pandoc server. Ubuntu's
+      # pandoc package ships WITHOUT the 'server' flag, so the standalone
+      # pandoc-server binary must come from the official release tarball.
+      - name: Install pandoc + pandoc-server
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends pandoc
+          curl -sL https://github.com/jgm/pandoc/releases/download/3.1.3/pandoc-3.1.3-linux-amd64.tar.gz -o /tmp/pandoc.tar.gz
+          tar xzf /tmp/pandoc.tar.gz -C /tmp
+          sudo cp /tmp/pandoc-3.1.3/bin/pandoc-server /usr/local/bin/
+          pandoc-server --version
 
       - name: Format check
         run: cargo fmt --all --check
@@ -69,12 +73,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # The MCP server spawns its own persistent `pandoc server` on port 8499
-      # for every tool call, so pandoc must be present in this job as well.
-      - name: Install pandoc
+      # The MCP server spawns its own persistent pandoc-server on port 8499
+      # for every tool call. Ubuntu's pandoc package lacks the 'server' flag,
+      # so install the standalone pandoc-server from the official tarball.
+      - name: Install pandoc + pandoc-server
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends pandoc
+          curl -sL https://github.com/jgm/pandoc/releases/download/3.1.3/pandoc-3.1.3-linux-amd64.tar.gz -o /tmp/pandoc.tar.gz
+          tar xzf /tmp/pandoc.tar.gz -C /tmp
+          sudo cp /tmp/pandoc-3.1.3/bin/pandoc-server /usr/local/bin/
+          pandoc-server --version
 
       - name: Install uv and Python 3.13
         uses: astral-sh/setup-uv@v5

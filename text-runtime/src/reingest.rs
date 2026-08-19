@@ -188,7 +188,7 @@ fn diff_recursive(
         // No exact match — try fuzzy match
         let mut best_match: Option<(&NodeRow, f64)> = None;
 
-        for (_hash, nodes) in hash_to_existing.iter() {
+        for nodes in hash_to_existing.values() {
             // Compute edit distance ratio
             for existing_node in nodes {
                 if matched_uuids.contains(&existing_node.uuid) {

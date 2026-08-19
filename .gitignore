@@ -1,0 +1,22 @@
+# ── macOS ────────────────────────────────────────────────────────────────────
+.DS_Store
+
+# ── Rust ─────────────────────────────────────────────────────────────────────
+text-runtime/target/
+
+# Runtime stores created by test runs / manual usage (db.sqlite + content files)
+**/.textruntime/
+
+# Complex-format integration test workspaces (created in CWD by tests)
+text-runtime/.test_complex_formats_*
+
+# ── Python / uv (MCP server) ─────────────────────────────────────────────────
+text-runtime-mcp/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# ── Logs / scratch ───────────────────────────────────────────────────────────
+*.log
+*.tmp

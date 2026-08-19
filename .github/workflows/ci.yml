@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    name: Rust (text-runtime)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: text-runtime
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          path: text-runtime
+
+      # Integration tests ingest real formats through a pandoc server. The
+      # crate's pandoc_mgr checks `which pandoc-server` and falls back to
+      # `pandoc server`, which the apt `pandoc` package provides.
+      - name: Install pandoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pandoc
+
+      - name: Format check
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Upload release binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: text-runtime-release-bin
+          path: text-runtime/target/release/text-runtime
+          if-no-files-found: error
+          retention-days: 1
+
+  mcp:
+    name: MCP (text-runtime-mcp)
+    runs-on: ubuntu-latest
+    needs: rust
+    env:
+      # Absolute path: the MCP server resolves TEXT_RUNTIME_BIN relative to its
+      # own cwd (text-runtime-mcp/), so a relative path would not resolve.
+      TEXT_RUNTIME_BIN: ${{ github.workspace }}/text-runtime/target/release/text-runtime
+      # Isolated scratch corpus so tests never touch ~/.textruntime on the runner.
+      TEXT_RUNTIME_DIR: ${{ runner.temp }}/textruntime
+      TEXT_RUNTIME_PANDOC_PORT: "8499"
+    steps:
+      - uses: actions/checkout@v4
+
+      # The MCP server spawns its own persistent `pandoc server` on port 8499
+      # for every tool call, so pandoc must be present in this job as well.
+      - name: Install pandoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pandoc
+
+      - name: Install uv and Python 3.13
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Download release binary from rust job
+        uses: actions/download-artifact@v4
+        with:
+          name: text-runtime-release-bin
+          path: text-runtime/target/release/
+
+      - name: Sanity check binary
+        run: |
+          chmod +x text-runtime/target/release/text-runtime
+          text-runtime/target/release/text-runtime --version
+
+      - name: Sync dependencies
+        run: uv sync --project text-runtime-mcp
+
+      - name: Smoke test
+        run: uv run --project text-runtime-mcp python text-runtime-mcp/smoke_test.py
+
+      - name: E2E test
+        run: uv run --project text-runtime-mcp python text-runtime-mcp/e2e_test.py

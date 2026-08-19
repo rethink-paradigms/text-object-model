@@ -1,0 +1,30 @@
+# text-runtime daemon — systemd unit (Linux)
+
+# Install:
+#   1. ./scripts/install.sh "$HOME/.local"      (or install the binary to /usr/local/bin)
+#   2. sudo cp deploy/text-runtime.service /etc/systemd/system/
+#   3. sudo systemctl daemon-reload
+#   4. sudo systemctl enable --now text-runtime
+#
+# Logs:
+#   journalctl -u text-runtime -f
+
+[Unit]
+Description=text-runtime daemon (local-first text runtime)
+After=network.target
+
+[Service]
+Type=simple
+# Path to the installed binary — adjust if not in /usr/local/bin
+ExecStart=/usr/local/bin/text-runtime daemon --config /etc/text-runtime/config.toml
+Restart=on-failure
+RestartSec=3
+# The daemon uses abstract Unix sockets for its single-instance lock
+# and binds a Unix domain socket under the state dir; keep it in its own
+# group for the socket files it creates.
+User=%i
+Group=%i
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

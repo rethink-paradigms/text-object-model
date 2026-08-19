@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  text-runtime daemon — macOS launchd agent (runs per-user).
+
+  Install:
+    ./scripts/install.sh                 # builds + installs ~/.local/bin/text-runtime
+    mkdir -p ~/Library/LaunchAgents
+    cp deploy/text-runtime.plist ~/Library/LaunchAgents/
+    # Edit the absolute paths below (ProgramArguments, WorkingDirectory) if needed.
+    launchctl load ~/Library/LaunchAgents/text-runtime.plist
+
+  Uninstall:
+    launchctl unload ~/Library/LaunchAgents/text-runtime.plist
+
+  Logs (view live):
+    log stream -predicate 'process == "text-runtime"'
+    log show -last 1h -predicate 'process == "text-runtime"'
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.text-runtime.daemon</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/samanvayayagsen/.local/bin/text-runtime</string>
+        <string>daemon</string>
+        <string>--config</string>
+        <string>/Users/samanvayayagsen/.config/text-runtime/config.toml</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/samanvayayagsen</string>
+
+    <!-- Restart on crash / keep alive -->
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- Run once at login, don't run at load if already running -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- The daemon installs its own single-instance lock (flock on pid file) -->
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/text-runtime-daemon.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/text-runtime-daemon.log</string>
+</dict>
+</plist>

@@ -56,5 +56,12 @@ jobs:
     name: MCP (text-runtime-mcp)
     runs-on: ubuntu-latest
     needs: rust
+    env:
+      # Absolute path: the MCP server resolves TEXT_RUNTIME_BIN relative to its
+      # own cwd (text-runtime-mcp/), so a relative path would not resolve.
+      TEXT_RUNTIME_BIN: ${{ github.workspace }}/text-runtime/target/release/text-runtime
+      # Isolated scratch corpus so tests never touch ~/.textruntime on the runner.
+      TEXT_RUNTIME_DIR: ${{ runner.temp }}/textruntime
+      TEXT_RUNTIME_PANDOC_PORT: "8499"
     steps:
-      - run: echo placeholder
+      - run: echo "bin=$TEXT_RUNTIME_BIN"
